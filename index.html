@@ -365,6 +365,26 @@ async function savePic(id,file){if(!file||!/^image\//.test(file.type))return;con
   if(PICS[id]&&PICS[id].startsWith('blob:'))URL.revokeObjectURL(PICS[id]);delete REPO_PICS[id];PICS[id]=URL.createObjectURL(blob);render()}
 function removePic(id){if(REPO_PICS[id]){delete REPO_PICS[id];delete PICS[id];render();return}if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').delete(id)}catch(e){}}if(PICS[id]&&PICS[id].startsWith('blob:'))URL.revokeObjectURL(PICS[id]);delete PICS[id];render()}
 const picCount=()=>Object.keys(PICS).length;
+let importMsg='';
+function loadJSZip(){return window.JSZip?Promise.resolve(window.JSZip):new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';sc.onload=()=>res(window.JSZip);sc.onerror=rej;document.head.appendChild(sc)})}
+const stemOf=n=>String(n).split('/').pop().replace(/\.[^.]+$/,'').toLowerCase();
+async function bulkImport(files){
+  let ok=0,skip=[];importMsg='Importing…';render();
+  for(const f of files){
+    if(/\.zip$/i.test(f.name)){
+      try{const JSZip=await loadJSZip();const z=await JSZip.loadAsync(f);
+        for(const e of Object.values(z.files)){if(e.dir||/__MACOSX|\/\./.test(e.name))continue;
+          const id=stemOf(e.name);if(!/\.(jpe?g|png|webp|gif)$/i.test(e.name)){continue}
+          if(!picById(id)){skip.push(e.name.split('/').pop());continue}
+          const blob=await e.async('blob');const ext=e.name.split('.').pop().toLowerCase();
+          await savePic(id,new File([blob],e.name,{type:'image/'+(ext==='jpg'?'jpeg':ext)}));ok++}
+      }catch(err){skip.push(f.name+' (could not open zip)')}
+    } else if(f.type&&f.type.startsWith('image/')){
+      const id=stemOf(f.name);if(picById(id)){await savePic(id,f);ok++}else skip.push(f.name);
+    }
+  }
+  importMsg=`Imported ${ok} picture${ok===1?'':'s'}`+(skip.length?` · didn't match a card: ${skip.slice(0,6).join(', ')}${skip.length>6?'…':''}`:'');render();
+}
 
 /* ================= NETWORK (PeerJS / WebRTC) ================= */
 let netOK=false, netMsg='Connecting…';
@@ -535,9 +555,9 @@ setInterval(()=>{
 let picFilter='all', picSel=null;
 // card selection, file input, drag-drop, paste for picture setup
 document.addEventListener('click',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;if(e.target.closest('button,a,input'))return;const c=e.target.closest('[data-pic]');if(c){picSel=c.dataset.pic;render()}},true);
-document.addEventListener('change',e=>{const id=e.target&&e.target.dataset&&e.target.dataset.picfile;if(id&&e.target.files[0]){savePic(id,e.target.files[0])}});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='bulkin'&&e.target.files.length){bulkImport([...e.target.files]);return}const id=e.target&&e.target.dataset&&e.target.dataset.picfile;if(id&&e.target.files[0]){savePic(id,e.target.files[0])}});
 document.addEventListener('dragover',e=>{if(MODE==='host'&&G&&G.phase==='pics'){e.preventDefault();document.querySelectorAll('.pcard2.drag').forEach(x=>x.classList.remove('drag'));const c=e.target.closest('[data-pic]');if(c)c.classList.add('drag')}});
-document.addEventListener('drop',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;e.preventDefault();const c=e.target.closest('[data-pic]');const f=e.dataTransfer&&e.dataTransfer.files[0];if(c&&f){picSel=c.dataset.pic;savePic(c.dataset.pic,f)}});
+document.addEventListener('drop',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;e.preventDefault();const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])];if(!fs.length)return;const c=e.target.closest('[data-pic]');if(c&&fs.length===1&&!/\.zip$/i.test(fs[0].name)){picSel=c.dataset.pic;savePic(c.dataset.pic,fs[0])}else bulkImport(fs)});
 document.addEventListener('paste',e=>{if(MODE!=='host'||!G||G.phase!=='pics'||!picSel)return;const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(x=>x.type.startsWith('image/'));if(it){e.preventDefault();savePic(picSel,it.getAsFile())}});
 
 // ---- host render ----
@@ -555,9 +575,10 @@ function render(){
   if(ph==='pics'){
     const list=PIC_POOL.filter(p=>picFilter==='all'||p.t===picFilter);
     const tiers=[1,2,3,4,5].map(d=>PIC_POOL.some(p=>p.d===d&&PICS[p.id]));
-    app.innerHTML=hostHeader(`<span class="status">📷 ${picCount()} of ${PIC_POOL.length} pictures ready</span><button class="btn sm" data-act="picsdone">Done</button>`)+
+    app.innerHTML=hostHeader(`<span class="status">📷 ${picCount()} of ${PIC_POOL.length} pictures ready</span><button class="btn teal sm" data-act="bulk">Import zip or files</button><input type="file" id="bulkin" accept="image/*,.zip" multiple hidden><button class="btn sm" data-act="picsdone">Done</button>`)+
     `<div style="padding:0 24px 14px;display:flex;flex-direction:column;gap:10px">
       <div class="display" style="font-size:30px;color:var(--sponge)">Picture setup</div>
+      <div style="border:3px dashed rgba(255,255,255,.25);border-radius:16px;padding:16px;text-align:center;font-weight:800;color:var(--muted)" id="bulkzone">⬇️ Drop the <b style="color:var(--white)">spongebob-pictures.zip</b> (or a bunch of image files) anywhere here. Files are matched to cards by name, like <code>rockbottom.jpg</code>.${importMsg?`<div style="color:var(--good);margin-top:6px">${esc(importMsg)}</div>`:''}</div>
       <div class="hint" style="font-size:15px;max-width:1000px">Add your own screenshot to any card: click the card and paste an image (Ctrl/Cmd+V), drag a file onto it, or tap Upload. Pictures added here save on this laptop only. You can also commit files to the site's <b>images/</b> folder using the file name on each card, and every laptop will pick them up. Each game picks one picture per dollar amount, harder ones zoom in more. Fill at least one card per row of the price ladder: ${tiers.map((ok,i)=>`<span class="tag" style="${ok?'background:var(--good);color:var(--ink)':''}">$${VALUES[i]} ${ok?'✓':''}</span>`).join(' ')}</div>
       <div class="seg" style="align-self:flex-start">${[['all','All'],['c','Characters'],['l','Places'],['i','Items']].map(([k,l])=>`<button class="${picFilter===k?'on':''}" data-act="picf" data-f="${k}">${l}</button>`).join('')}</div>
     </div>
@@ -697,7 +718,8 @@ document.addEventListener('click',e=>{
   if(a==='addpl'){syncNames();if(G.players.length<8){G.players.push('Player '+(G.players.length+1));save()}render();publish();return}
   if(a==='start'){syncNames();if(!Object.keys(G.used).length)assignPics();setPhase('board');return}
   if(a==='pics'){syncNames();setPhase('pics');return}
-  if(a==='picsdone'){setPhase('lobby');return}
+  if(a==='picsdone'){importMsg='';setPhase('lobby');return}
+  if(a==='bulk'){const i=$('#bulkin');if(i)i.click();return}
   if(a==='picrm'){removePic(t.dataset.id);return}
   if(a==='picup'){picSel=t.dataset.id;const inp=document.getElementById('pf-'+t.dataset.id);if(inp)inp.click();return}
   if(a==='picf'){picFilter=t.dataset.f;render();return}
@@ -847,6 +869,7 @@ function boot(){
     G=lsGet(STORE_HOST);
     if(!G||!G.opts||!G.players){G=null;newGame()}
     if(!G.code){G.code=genCode();save()}
+    if(G.phase==='pics')G.phase='lobby';
     if(G.phase==='clue'||G.phase==='finalClue'){if(timeLeft()<=0)G.endsAt=Date.now()+5000}
     render();hostNet();setInterval(publish,4000);
     loadPics().then(loadRepoPics).then(()=>render());
