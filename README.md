@@ -11,3 +11,10 @@ A SpongeBob trivia game in the style of Jeopardy, all in one `index.html`. There
 The board has 6 categories and 30 questions, plus a hidden Daily Double and Final Jeopardy with wagers.
 
 Phones connect to the big screen directly through PeerJS (a free WebRTC service). It works best with everyone on the same Wi-Fi.
+
+## Picture round ("Picture This")
+A 7th category with "Who / Where / What is this?" questions about characters, places and items. Each picture starts zoomed in and pulls back as the clock runs down, and the bigger the dollar value, the further in it starts. Wrong answers are drawn from the same kind of thing (places vs. places).
+
+The column only appears once you've added pictures. There are two ways to add them:
+- **On the big screen:** Players & QR → **Picture setup**. Click a card and paste an image, drop a file on it, or upload one. Pictures saved this way stay on that laptop only.
+- **In the repo:** add files to `images/` using the file names in `images/README.md`. Every device then picks them up.

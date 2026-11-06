@@ -53,7 +53,7 @@ input{font-family:inherit}
 
 /* board */
 .boardwrap{flex:1;display:flex;flex-direction:column;padding:0 24px 16px;gap:14px}
-.board{flex:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:auto repeat(5,1fr);gap:8px;
+.board{flex:1;display:grid;grid-template-columns:repeat(var(--cols,6),1fr);grid-template-rows:auto repeat(5,1fr);gap:8px;
   background:#020c1c;padding:8px;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.45),inset 0 0 0 3px #12306b;min-height:480px}
 .cat{background:linear-gradient(180deg,var(--tile),var(--tile2));display:flex;align-items:center;justify-content:center;
   text-align:center;padding:12px 8px;border-radius:8px;font-size:clamp(13px,1.45vw,20px);text-transform:uppercase;
@@ -81,6 +81,26 @@ input{font-family:inherit}
 .cluemeta{display:flex;gap:12px;align-items:center;font-weight:900;font-size:20px;text-transform:uppercase;color:var(--muted)}
 .cluemeta .val{color:var(--gold);font-family:'Titan One';font-size:26px}
 .cluetext{font-family:'Titan One';font-size:clamp(28px,3.6vw,58px);line-height:1.18;max-width:1200px;text-shadow:0 4px 0 rgba(0,0,0,.35)}
+.picframe{width:min(900px,92vw);aspect-ratio:16/9;max-height:46vh;border-radius:20px;overflow:hidden;background:#020c1c;
+  box-shadow:0 0 0 6px var(--sponge),0 18px 40px rgba(0,0,0,.5);position:relative}
+.picframe img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s linear;transform-origin:var(--ox,50%) var(--oy,50%)}
+.picmissing{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-weight:800;padding:20px}
+.picmissing b{font-family:'Titan One';color:var(--sponge);font-size:28px}
+.cluescreen.pic{gap:16px;padding-top:6px}
+.cluescreen.pic .cluetext{font-size:clamp(26px,2.8vw,44px)}
+.cluescreen.pic .opt{padding:12px 18px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;padding:0 24px 30px}
+.pcard2{background:rgba(255,255,255,.07);border-radius:16px;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(255,255,255,.1);display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .15s}
+.pcard2.sel{box-shadow:inset 0 0 0 3px var(--sponge),0 0 0 3px rgba(255,225,77,.25)}
+.pcard2.drag{box-shadow:inset 0 0 0 3px var(--teal)}
+.pthumb{aspect-ratio:16/9;background:#041327;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:800;font-size:13px;text-align:center;padding:8px;border-bottom:2px dashed rgba(255,255,255,.12)}
+.pthumb img{width:100%;height:100%;object-fit:cover}
+.pinfo{padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.pinfo .nm{font-weight:900;font-size:16px;line-height:1.2}
+.pinfo .meta{font-size:12px;font-weight:800;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pinfo a{color:var(--teal);font-weight:800;font-size:13px}
+.pbtns{display:flex;gap:6px}
+.tag{padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.1)}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:1100px}
 .opt{display:flex;align-items:center;gap:14px;padding:16px 20px;border-radius:18px;font-weight:900;font-size:clamp(18px,1.9vw,28px);
   color:var(--ink);text-align:left;transition:opacity .3s,transform .3s}
@@ -188,7 +208,7 @@ const JOIN_PARAM = (new URLSearchParams(location.search).get('join')||'').toUppe
 const PEER_PREFIX = 'bbjeopardy-';
 const VALUES = [200,400,600,800,1000];
 const LET = ['A','B','C','D'];
-const STORE_HOST = 'bbj-host-v2', STORE_ME = 'bbj-me-v1';
+const STORE_HOST = 'bbj-host-v3', STORE_ME = 'bbj-me-v1';
 
 /* ================= TRIVIA ================= */
 // a = index of the correct option (options get shuffled each new game)
@@ -240,6 +260,73 @@ const DATA = {
   final: { cat: "The Big Screen", q: "In The SpongeBob SquarePants Movie (2004), which real-life star carries SpongeBob and Patrick back to Bikini Bottom?", o: ["David Hasselhoff","Antonio Banderas","Keanu Reeves","Dwayne Johnson"], a: 0 }
 };
 
+
+/* ================= PICTURE ROUND POOL =================
+   Names verified against Encyclopedia SpongeBobia (spongebob.fandom.com).
+   t = type (c character, l location, i item), d = difficulty 1-5 ($200-$1000), w = wiki page.
+   Images are NOT bundled: the host adds their own screenshots in "Picture setup" (saved on that laptop only). */
+const PIC_POOL = [
+  // characters
+  {id:'larry', n:'Larry the Lobster', t:'c', d:1, w:'Larry_the_Lobster'},
+  {id:'pearl', n:'Pearl Krabs', t:'c', d:1, w:'Pearl_Krabs'},
+  {id:'mermaidman', n:'Mermaid Man', t:'c', d:1, w:'Mermaid_Man'},
+  {id:'barnacleboy', n:'Barnacle Boy', t:'c', d:1, w:'Barnacle_Boy'},
+  {id:'squilliam', n:'Squilliam Fancyson', t:'c', d:2, w:'Squilliam_Fancyson'},
+  {id:'bubblebass', n:'Bubble Bass', t:'c', d:2, w:'Bubble_Bass'},
+  {id:'dutchman', n:'The Flying Dutchman', t:'c', d:2, w:'Flying_Dutchman'},
+  {id:'doodlebob', n:'DoodleBob', t:'c', d:2, w:'DoodleBob'},
+  {id:'manray', n:'Man Ray', t:'c', d:2, w:'Man_Ray'},
+  {id:'neptune', n:'King Neptune', t:'c', d:2, w:'King_Neptune'},
+  {id:'patchy', n:'Patchy the Pirate', t:'c', d:2, w:'Patchy_the_Pirate'},
+  {id:'kevin', n:'Kevin C. Cucumber', t:'c', d:3, w:'Kevin_C._Cucumber'},
+  {id:'dirtybubble', n:'Dirty Bubble', t:'c', d:3, w:'Dirty_Bubble'},
+  {id:'fred', n:'Fred', t:'c', d:3, w:'Fred'},
+  {id:'nosferatu', n:'Nosferatu', t:'c', d:3, w:'Nosferatu'},
+  {id:'grandma', n:'Grandma SquarePants', t:'c', d:3, w:'Grandma_SquarePants'},
+  {id:'bullworm', n:'Alaskan Bull Worm', t:'c', d:3, w:'Alaskan_Bull_Worm'},
+  {id:'painty', n:'Painty the Pirate', t:'c', d:3, w:'Painty_the_Pirate'},
+  {id:'spongegar', n:'SpongeGar', t:'c', d:4, w:'SpongeGar'},
+  {id:'dennis', n:'Dennis', t:'c', d:4, w:'Dennis'},
+  {id:'mamakrabs', n:'Mama Krabs', t:'c', d:4, w:'Mama_Krabs'},
+  {id:'jenkins', n:'Old Man Jenkins', t:'c', d:4, w:'Old_Man_Jenkins'},
+  {id:'harold', n:'Harold SquarePants', t:'c', d:5, w:'Harold_SquarePants'},
+  {id:'margaret', n:'Margaret SquarePants', t:'c', d:5, w:'Margaret_SquarePants'},
+  {id:'mrstentacles', n:'Mrs. Tentacles', t:'c', d:5, w:'Mrs._Tentacles'},
+  // locations
+  {id:'goolagoon', n:'Goo Lagoon', t:'l', d:1, w:'Goo_Lagoon'},
+  {id:'jellyfields', n:'Jellyfish Fields', t:'l', d:1, w:'Jellyfish_Fields'},
+  {id:'treedome', n:"Sandy's treedome", t:'l', d:1, w:"Sandy_Cheeks'_treedome"},
+  {id:'boatingschool', n:"Mrs. Puff's Boating School", t:'l', d:1, w:"Mrs._Puff's_Boating_School"},
+  {id:'gloveworld', n:'Glove World!', t:'l', d:2, w:'Glove_World!'},
+  {id:'chumbucket', n:'The Chum Bucket', t:'l', d:2, w:'Chum_Bucket'},
+  {id:'rockbottom', n:'Rock Bottom', t:'l', d:3, w:'Rock_Bottom_(location)'},
+  {id:'saltyspitoon', n:'The Salty Spitoon', t:'l', d:3, w:'The_Salty_Spitoon'},
+  {id:'weeniehut', n:"Weenie Hut Jr's", t:'l', d:3, w:"Weenie_Hut_Jr's"},
+  {id:'mermalair', n:'The Mermalair', t:'l', d:3, w:'Mermalair'},
+  {id:'tentacleacres', n:'Tentacle Acres', t:'l', d:4, w:'Tentacle_Acres'},
+  {id:'shadyshoals', n:'Shady Shoals Rest Home', t:'l', d:4, w:'Shady_Shoals_Rest_Home'},
+  {id:'bargnmart', n:"Barg'N-Mart", t:'l', d:4, w:"Barg'N-Mart"},
+  {id:'kelpforest', n:'Kelp Forest', t:'l', d:4, w:'Kelp_Forest'},
+  {id:'thugtug', n:'Thug Tug', t:'l', d:5, w:'Thug_Tug'},
+  {id:'sandmountain', n:'Sand Mountain', t:'l', d:5, w:'Sand_Mountain'},
+  {id:'newkelp', n:'New Kelp City', t:'l', d:5, w:'New_Kelp_City'},
+  {id:'sulfur', n:'Sulfur Fields', t:'l', d:5, w:'Sulfur_Fields'},
+  // items
+  {id:'conch', n:'The Magic Conch shell', t:'i', d:1, w:'Magic_Conch_shell'},
+  {id:'clarinet', n:"Squidward's clarinet", t:'i', d:1, w:'Clarinet'},
+  {id:'formula', n:'The Krabby Patty secret formula', t:'i', d:2, w:'Krabby_Patty_secret_formula'},
+  {id:'bubblewand', n:'Bubble wand', t:'i', d:2, w:'Bubble_wand'},
+  {id:'hydrospatula', n:'The hydro-dynamic spatula', t:'i', d:3, w:'Hydro-dynamic_spatula'},
+  {id:'firstdollar', n:"Mr. Krabs' first dollar", t:'i', d:3, w:"Mr._Krabs'_first_dollar"},
+  {id:'magicpencil', n:'The magic pencil', t:'i', d:3, w:'Magic_pencil'},
+  {id:'prettypatty', n:'Pretty Patty', t:'i', d:3, w:'Pretty_Patty'},
+  {id:'goldspatula', n:'The golden spatula', t:'i', d:4, w:'Golden_spatula'},
+  {id:'mmbelt', n:"Mermaid Man's belt", t:'i', d:4, w:"Mermaid_Man's_belt"}
+];
+const PIC_Q={c:'Who is this?',l:'Where is this?',i:'What is this?'};
+const PIC_TYPE={c:'Characters',l:'Places',i:'Items'};
+const picById=id=>PIC_POOL.find(x=>x.id===id);
+
 /* ================= HELPERS ================= */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -259,6 +346,26 @@ function tone(freqs,dur=.15,type='triangle',vol=.08){if(!G||!G.sound)return;try{
   let t=AC.currentTime;freqs.forEach(f=>{const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+dur);t+=dur*.85})}catch(e){}}
 const sfx={open:()=>tone([523,659,784],.12),win:()=>tone([659,784,1047,1319],.13),buzz:()=>tone([180,140],.25,'sawtooth',.06),dd:()=>tone([392,523,659,784,1047],.14,'square',.05),lock:()=>tone([880],.06,'sine',.05)};
 
+/* ================= PICTURE STORAGE (host laptop only) ================= */
+const PICS={}; // id -> object URL
+let picDB=null;
+function idb(){return new Promise(res=>{try{const r=indexedDB.open('bbj-pics',1);r.onupgradeneeded=()=>r.result.createObjectStore('pics');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch(e){res(null)}})}
+async function loadPics(){picDB=await idb();if(!picDB)return;await Promise.all(PIC_POOL.map(p=>new Promise(res=>{try{const q=picDB.transaction('pics').objectStore('pics').get(p.id);q.onsuccess=()=>{if(q.result)PICS[p.id]=URL.createObjectURL(q.result);res()};q.onerror=()=>res()}catch(e){res()}})))}
+// Also pick up images the host committed to the site's images/ folder (images/<id>.jpg|.png|.webp)
+function probe(url){return new Promise(res=>{const im=new Image();im.onload=()=>res(true);im.onerror=()=>res(false);im.src=url})}
+async function loadRepoPics(){
+  if(!/^https?:$/.test(location.protocol))return;
+  const base=location.href.split(/[?#]/)[0].replace(/[^/]*$/,'');
+  await Promise.all(PIC_POOL.filter(p=>!PICS[p.id]).map(async p=>{for(const ext of ['jpg','png','webp','jpeg']){const u=base+'images/'+p.id+'.'+ext;if(await probe(u)){PICS[p.id]=u;REPO_PICS[p.id]=1;return}}}));
+}
+const REPO_PICS={};
+function shrink(file){return new Promise(res=>{const img=new Image();const u=URL.createObjectURL(file);img.onload=()=>{const sc=Math.min(1,1600/img.width);const c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),'image/jpeg',.88)};img.onerror=()=>{URL.revokeObjectURL(u);res(null)};img.src=u})}
+async function savePic(id,file){if(!file||!/^image\//.test(file.type))return;const blob=await shrink(file);if(!blob)return;
+  if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').put(blob,id)}catch(e){}}
+  if(PICS[id]&&PICS[id].startsWith('blob:'))URL.revokeObjectURL(PICS[id]);delete REPO_PICS[id];PICS[id]=URL.createObjectURL(blob);render()}
+function removePic(id){if(REPO_PICS[id]){delete REPO_PICS[id];delete PICS[id];render();return}if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').delete(id)}catch(e){}}if(PICS[id]&&PICS[id].startsWith('blob:'))URL.revokeObjectURL(PICS[id]);delete PICS[id];render()}
+const picCount=()=>Object.keys(PICS).length;
+
 /* ================= NETWORK (PeerJS / WebRTC) ================= */
 let netOK=false, netMsg='Connecting…';
 const genCode=()=>{const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<5;i++)c+=A[Math.floor(Math.random()*A.length)];return c};
@@ -276,17 +383,38 @@ function newGame(players){
   const opts={};
   DATA.cats.forEach((c,ci)=>c.clues.forEach((cl,ri)=>{const id=ci+'-'+ri;const order=shuffle([0,1,2,3]);opts[id]={o:order.map(i=>cl.o[i]),a:order.indexOf(cl.a)}}));
   const fo=shuffle([0,1,2,3]);
-  const ddRow=2+Math.floor(Math.random()*3), ddCol=Math.floor(Math.random()*6);
+  const ddRow=2+Math.floor(Math.random()*3), ddCol=Math.floor(Math.random()*DATA.cats.length);
   const prev=G||{};
   G={ players: players || prev.players || ['Andrew','Teagan','Presley'],
       phase:'lobby', used:{}, results:{}, answers:{}, current:null, key:'k'+Date.now().toString(36),
       dd: ddCol+'-'+ddRow, opts, fopts:{o:fo.map(i=>DATA.final.o[i]),a:fo.indexOf(DATA.final.a)},
       minus: prev.minus ?? false, timer: prev.timer ?? 20, sound: prev.sound ?? true,
-      endsAt:0, wagers:{}, fanswers:{}, fres:{}, code: prev.code || genCode(), base: prev.base || '' };
+      endsAt:0, wagers:{}, fanswers:{}, fres:{}, picCol:[], code: prev.code || genCode(), base: prev.base || '' };
   save();
 }
 function save(){lsSet(STORE_HOST,G)}
-function clueOf(id){const [c,r]=id.split('-').map(Number);return {cat:DATA.cats[c].name,v:VALUES[r],q:DATA.cats[c].clues[r].q,...G.opts[id]}}
+const PIC_CAT='Picture This';
+const hasPicCol=()=>!!(G&&G.picCol&&G.picCol.some(Boolean));
+function totalClues(){return DATA.cats.length*5+((G&&G.picCol)||[]).filter(Boolean).length}
+function clueOf(id){
+  if(id.startsWith('p-')){const r=+id.slice(2);const P=picById(G.picCol[r]);return {cat:PIC_CAT,v:VALUES[r],q:PIC_Q[P.t],img:PICS[P.id]||'missing',zoom:1+0.5*(r+1),...G.opts[id]}}
+  const [c,r]=id.split('-').map(Number);const cl=DATA.cats[c].clues[r];return {cat:DATA.cats[c].name,v:VALUES[r],q:cl.q,...G.opts[id]}}
+function assignPics(){
+  const have=PIC_POOL.filter(p=>PICS[p.id]);G.picCol=[];if(!have.length){save();return}
+  const used=new Set();
+  for(let r=0;r<5;r++){
+    const pick=d=>shuffle(have.filter(p=>p.d===d&&!used.has(p.id)))[0];
+    let P=pick(r+1);for(let k=1;!P&&k<5;k++)P=pick(r+1+k)||pick(r+1-k);
+    if(!P){G.picCol.push(null);continue}
+    used.add(P.id);G.picCol.push(P.id);
+    const same=PIC_POOL.filter(x=>x.t===P.t&&x.id!==P.id);
+    const near=shuffle(same.filter(x=>Math.abs(x.d-P.d)<=1));const far=shuffle(same.filter(x=>Math.abs(x.d-P.d)>1));
+    const dis=[...near,...far].slice(0,3).map(x=>x.n);
+    const o=shuffle([P.n,...dis]);G.opts['p-'+r]={o,a:o.indexOf(P.n)};
+  }
+  save();
+}
+function picScale(){const C=G.current&&clueOf(G.current);if(!C||!C.img||C.img==='missing')return 1;if(G.phase!=='clue')return 1;return 1+(C.zoom-1)*(timeLeft()/(G.timer*1000))}
 function scores(){
   const s={};G.players.forEach(p=>s[p]=0);
   Object.values(G.results).forEach(R=>{G.players.forEach(p=>{if(R.r[p]==='right')s[p]+=R.v;else if(R.r[p]==='wrong'&&G.minus)s[p]-=R.v})});
@@ -315,7 +443,7 @@ function reveal(){
 }
 function cycle(p){const R=G.results[G.current];if(!R)return;R.r[p]=R.r[p]===''?'right':R.r[p]==='right'?'wrong':'';save();render();publish()}
 function cycleFinal(p){G.fres[p]=!G.fres[p]?'right':G.fres[p]==='right'?'wrong':'';save();render();publish()}
-function backToBoard(){G.current=null;G.answers={};setPhase(Object.keys(G.used).length>=30?'board':'board')}
+function backToBoard(){G.current=null;G.answers={};setPhase(Object.keys(G.used).length>=totalClues()?'board':'board')}
 function startFinal(){G.key='f'+Date.now().toString(36);G.wagers={};G.fanswers={};G.fres={};G.answers={};sfx.dd();setPhase('finalWager')}
 function showFinalClue(){
   document.querySelectorAll('[data-wager]').forEach(inp=>{const p=inp.dataset.wager;const v=parseInt(inp.value,10);if(!isNaN(v))G.wagers[p]=Math.max(0,Math.min(v,maxWager(p)))});
@@ -380,9 +508,9 @@ function joinUrl(){
 
 function publicState(){
   const s=scores();
-  const st={ph:G.phase,pl:G.players,sc:s,k:G.key,ans:Object.keys(G.answers),end:timeLeft(),tot:G.phase==='finalClue'?30000:G.timer*1000,t:Date.now()};
+  const st={ph:G.phase==='pics'?'lobby':G.phase,pl:G.players,sc:s,k:G.key,ans:Object.keys(G.answers),end:timeLeft(),tot:G.phase==='finalClue'?30000:G.timer*1000,t:Date.now()};
   if(G.phase==='dd'){const C=clueOf(G.current);st.c={cat:C.cat,v:C.v*2,dd:1}}
-  if(G.phase==='clue'||G.phase==='reveal'){const C=clueOf(G.current);st.c={cat:C.cat,v:C.v*(G.current===G.dd?2:1),q:C.q,o:C.o,dd:G.current===G.dd?1:0}}
+  if(G.phase==='clue'||G.phase==='reveal'){const C=clueOf(G.current);st.c={cat:C.cat,v:C.v*(G.current===G.dd?2:1),q:C.q,o:C.o,dd:G.current===G.dd?1:0,pic:C.img?1:0}}
   if(G.phase==='reveal'){const R=G.results[G.current];st.rv={a:clueOf(G.current).a,r:R.r}}
   if(G.phase==='finalWager'){st.fc=DATA.final.cat;st.max={};G.players.forEach(p=>st.max[p]=maxWager(p));st.fw=G.wagers}
   if(G.phase==='finalClue'||G.phase==='finalReveal'){st.c={cat:DATA.final.cat,v:0,q:DATA.final.q,o:G.fopts.o}}
@@ -398,10 +526,19 @@ setInterval(()=>{
     const ms=timeLeft(),sec=Math.ceil(ms/1000);
     const bar=$('#tbar'),num=$('#tnum');const total=G.phase==='clue'?G.timer*1000:30000;
     if(bar)bar.style.width=(100*ms/total)+'%';if(num)num.textContent=sec;
+    const pi=$('#picimg');if(pi)pi.style.transform='scale('+picScale()+')';
     if(sec!==lastPublishedSec){lastPublishedSec=sec;publish()}
     if(ms<=0&&G.endsAt){G.endsAt=0;sfx.buzz();setTimeout(()=>{if(G.phase==='clue')reveal();else if(G.phase==='finalClue')revealFinal()},700)}
   }
 },200);
+
+let picFilter='all', picSel=null;
+// card selection, file input, drag-drop, paste for picture setup
+document.addEventListener('click',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;if(e.target.closest('button,a,input'))return;const c=e.target.closest('[data-pic]');if(c){picSel=c.dataset.pic;render()}},true);
+document.addEventListener('change',e=>{const id=e.target&&e.target.dataset&&e.target.dataset.picfile;if(id&&e.target.files[0]){savePic(id,e.target.files[0])}});
+document.addEventListener('dragover',e=>{if(MODE==='host'&&G&&G.phase==='pics'){e.preventDefault();document.querySelectorAll('.pcard2.drag').forEach(x=>x.classList.remove('drag'));const c=e.target.closest('[data-pic]');if(c)c.classList.add('drag')}});
+document.addEventListener('drop',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;e.preventDefault();const c=e.target.closest('[data-pic]');const f=e.dataTransfer&&e.dataTransfer.files[0];if(c&&f){picSel=c.dataset.pic;savePic(c.dataset.pic,f)}});
+document.addEventListener('paste',e=>{if(MODE!=='host'||!G||G.phase!=='pics'||!picSel)return;const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(x=>x.type.startsWith('image/'));if(it){e.preventDefault();savePic(picSel,it.getAsFile())}});
 
 // ---- host render ----
 function hostHeader(right){
@@ -415,13 +552,33 @@ function render(){
   if(MODE!=='host')return;
   const app=$('#app');const ph=G.phase;
   if(ph==='lobby')return renderLobby(app);
+  if(ph==='pics'){
+    const list=PIC_POOL.filter(p=>picFilter==='all'||p.t===picFilter);
+    const tiers=[1,2,3,4,5].map(d=>PIC_POOL.some(p=>p.d===d&&PICS[p.id]));
+    app.innerHTML=hostHeader(`<span class="status">📷 ${picCount()} of ${PIC_POOL.length} pictures ready</span><button class="btn sm" data-act="picsdone">Done</button>`)+
+    `<div style="padding:0 24px 14px;display:flex;flex-direction:column;gap:10px">
+      <div class="display" style="font-size:30px;color:var(--sponge)">Picture setup</div>
+      <div class="hint" style="font-size:15px;max-width:1000px">Add your own screenshot to any card: click the card and paste an image (Ctrl/Cmd+V), drag a file onto it, or tap Upload. Pictures added here save on this laptop only. You can also commit files to the site's <b>images/</b> folder using the file name on each card, and every laptop will pick them up. Each game picks one picture per dollar amount, harder ones zoom in more. Fill at least one card per row of the price ladder: ${tiers.map((ok,i)=>`<span class="tag" style="${ok?'background:var(--good);color:var(--ink)':''}">$${VALUES[i]} ${ok?'✓':''}</span>`).join(' ')}</div>
+      <div class="seg" style="align-self:flex-start">${[['all','All'],['c','Characters'],['l','Places'],['i','Items']].map(([k,l])=>`<button class="${picFilter===k?'on':''}" data-act="picf" data-f="${k}">${l}</button>`).join('')}</div>
+    </div>
+    <div class="pgrid">${list.map(p=>`<div class="pcard2 ${picSel===p.id?'sel':''}" data-pic="${p.id}">
+      <div class="pthumb" data-act-card="${p.id}">${PICS[p.id]?`<img src="${PICS[p.id]}" alt="">`:(picSel===p.id?'Paste an image now (Ctrl/Cmd+V)<br>or drop a file here':'Click, then paste<br>or drop an image')}</div>
+      <div class="pinfo"><div class="nm">${esc(p.n)}</div>
+        <div class="meta"><span class="tag">${PIC_TYPE[p.t]}</span><span class="tag">$${VALUES[p.d-1]}</span>${REPO_PICS[p.id]?'<span class="tag" style="background:var(--teal);color:var(--ink)">from site</span>':''}</div>
+        <div class="meta" style="font-weight:700">File: images/${p.id}.jpg</div>
+        <a href="https://spongebob.fandom.com/wiki/${encodeURI(p.w)}" target="_blank" rel="noopener">Open wiki page ↗</a>
+        <div class="pbtns"><button class="btn sm" data-act="picup" data-id="${p.id}">${PICS[p.id]?'Replace':'Upload'}</button>${PICS[p.id]?`<button class="btn ghost sm" data-act="picrm" data-id="${p.id}">Remove</button>`:''}</div>
+        <input type="file" accept="image/*" id="pf-${p.id}" data-picfile="${p.id}" hidden>
+      </div></div>`).join('')}</div>`;
+    return;
+  }
   if(ph==='board'){
     const done=Object.keys(G.used).length;
     app.innerHTML=hostHeader(`<span class="status"><span class="dot ${netOK?'on':''}"></span>Code ${esc(G.code||'')} · ${peerCount} phone${peerCount===1?'':'s'}</span>
       <button class="btn ghost sm" data-act="lobby">Players & QR</button>
-      <button class="btn ${done>=30?'':'ghost'} sm" data-act="final">Final Jeopardy${done>=30?' →':''}</button>`)+
-      `<div class="boardwrap"><div class="board">${DATA.cats.map(c=>`<div class="cat display">${esc(c.name)}</div>`).join('')}
-      ${VALUES.map((v,r)=>DATA.cats.map((c,ci)=>{const id=ci+'-'+r;return `<button class="tilebtn display ${G.used[id]?'used':''}" data-clue="${id}" ${G.used[id]?'disabled':''}>$${v}</button>`}).join('')).join('')}
+      <button class="btn ${done>=totalClues()?'':'ghost'} sm" data-act="final">Final Jeopardy${done>=totalClues()?' →':''}</button>`)+
+      `<div class="boardwrap"><div class="board" style="--cols:${DATA.cats.length+(hasPicCol()?1:0)}">${DATA.cats.map(c=>`<div class="cat display">${esc(c.name)}</div>`).join('')}${hasPicCol()?`<div class="cat display" style="background:linear-gradient(180deg,#d4a017,#b07d0a);color:#fff">📷 ${PIC_CAT}</div>`:''}
+      ${VALUES.map((v,r)=>DATA.cats.map((c,ci)=>{const id=ci+'-'+r;return `<button class="tilebtn display ${G.used[id]?'used':''}" data-clue="${id}" ${G.used[id]?'disabled':''}>$${v}</button>`}).join('')+(hasPicCol()?(()=>{const id='p-'+r;const ok=G.picCol[r];return `<button class="tilebtn display ${!ok||G.used[id]?'used':''}" data-clue="${id}" ${!ok||G.used[id]?'disabled':''}>$${v}</button>`})():'')).join('')}
       </div>${scoreCards()}</div>`;
     return;
   }
@@ -444,9 +601,10 @@ function render(){
       const st=R[p]||'';const ch=chosen[p];const extra=fin?` ${st==='right'?'+':st==='wrong'?'-':''}${money(+G.wagers[p]||0)}`:'';
       return `<button class="lock ${st}" data-cyc="${esc(p)}" title="Tap to change: right / wrong / no answer">${st==='right'?'✅':st==='wrong'?'❌':'➖'} ${esc(p)}${ch!=null?` · ${LET[ch]}`:''}${fin?`<small style="opacity:.8">${extra}</small>`:''}</button>`}).join('');
     app.innerHTML=hostHeader(rev?'':`<button class="btn ghost sm" data-act="addtime">+10s</button><button class="btn sm" data-act="${fin?'revealfinal':'reveal'}">Reveal answer</button>`)+
-      `<div class="cluescreen">
+      `<div class="cluescreen ${C.img?'pic':''}">
         <div class="cluemeta"><span>${esc(C.cat)}</span>${v?`<span class="val">${money(v)}</span>`:''}${!fin&&G.current===G.dd?'<span style="color:var(--gold)">★ Daily Double</span>':''}</div>
         <div class="cluetext">${esc(C.q)}</div>
+        ${C.img==='missing'?`<div class="picframe"><div class="picmissing"><b>📷 Picture removed</b><span>Re-add it in Picture setup</span></div></div>`:C.img?`<div class="picframe"><img id="picimg" src="${esc(C.img)}" alt="" style="transform:scale(${rev?1:picScale()});${C.origin?`--ox:${esc(C.origin[0])};--oy:${esc(C.origin[1])}`:''}" onerror="this.outerHTML='<div class=&quot;picmissing&quot;><b>📷 Picture failed to load</b></div>'"></div>`:''}
         <div class="opts">${C.o.map((o,i)=>`<div class="opt o${i} ${rev?(i===C.a?'win':'dim'):''}"><span class="L">${LET[i]}</span><span>${esc(o)}</span></div>`).join('')}</div>
         ${rev?'':`<div class="row" style="width:100%;max-width:1100px"><div class="timer" style="flex:1"><i id="tbar" style="width:${100*ms/total}%"></i></div><div class="timenum" id="tnum">${Math.ceil(ms/1000)}</div></div>`}
         <div class="locks">${locks}</div>
@@ -491,6 +649,7 @@ function renderLobby(app){
       </div>
       <div class="row" style="justify-content:flex-start;margin-top:24px">
         <button class="btn big" data-act="start">${inGame?'Resume game':'Start the game'} →</button>
+        <button class="btn teal" data-act="pics">📷 Picture setup (${picCount()})</button>
         ${inGame?'<button class="btn ghost" data-act="reset">New game</button>':''}
       </div>
     </div>
@@ -536,13 +695,19 @@ document.addEventListener('click',e=>{
   if(t.dataset.rm!=null){syncNames();if(G.players.length>1){G.players.splice(+t.dataset.rm,1);save()}render();publish();return}
   const a=t.dataset.act;if(!a)return;
   if(a==='addpl'){syncNames();if(G.players.length<8){G.players.push('Player '+(G.players.length+1));save()}render();publish();return}
-  if(a==='start'){syncNames();setPhase('board');return}
+  if(a==='start'){syncNames();if(!Object.keys(G.used).length)assignPics();setPhase('board');return}
+  if(a==='pics'){syncNames();setPhase('pics');return}
+  if(a==='picsdone'){setPhase('lobby');return}
+  if(a==='picrm'){removePic(t.dataset.id);return}
+  if(a==='picup'){picSel=t.dataset.id;const inp=document.getElementById('pf-'+t.dataset.id);if(inp)inp.click();return}
+  if(a==='picf'){picFilter=t.dataset.f;render();return}
+  if(a==='picsel'){picSel=t.dataset.id;render();return}
   if(a==='reset'){syncNames();openModal('Start a new game?','Scores and the board reset. Player names stay.',()=>{newGame(G.players);render();publish()});return}
   if(a==='lobby'){setPhase('lobby');return}
   if(a==='newcode'){syncNames();newCode();return}
   if(a==='setbase'){syncNames();G.base=($('#baseurl').value||'').trim();save();render();return}
   if(a==='board'){syncNames();backToBoard();return}
-  if(a==='final'){const left=30-Object.keys(G.used).length;if(left>0)openModal('Jump to Final Jeopardy?',`${left} clue${left===1?' is':'s are'} still on the board.`,startFinal);else startFinal();return}
+  if(a==='final'){const left=totalClues()-Object.keys(G.used).length;if(left>0)openModal('Jump to Final Jeopardy?',`${left} clue${left===1?' is':'s are'} still on the board.`,startFinal);else startFinal();return}
   if(a==='ddgo'){startClueTimer();return}
   if(a==='reveal'){reveal();return}
   if(a==='revealfinal'){revealFinal();return}
@@ -640,7 +805,7 @@ function prender(){
     } else {
       body=`<div class="ph-timer"><i id="ptbar" style="width:100%"></i></div>
         <div class="ph-sub" style="text-align:left">${esc(H.c.cat)}${H.c.v?' · '+money(H.c.v):''}</div>
-        <div class="ph-clue">${esc(H.c.q)}</div>
+        <div class="ph-clue">${H.c.pic?'👀 ':''}${esc(H.c.q)}${H.c.pic?'<br><span style="color:var(--sponge);font-size:15px">Look at the big screen! The picture zooms out as time runs down.</span>':''}</div>
         <div class="ph-opts">${H.c.o.map((o,i)=>`<button class="ph-opt o${i}" data-ans="${i}"><span class="L">${LET[i]}</span><span>${esc(o)}</span></button>`).join('')}</div>`;
     }
   } else if(ph==='reveal'||ph==='finalReveal'){
@@ -684,6 +849,7 @@ function boot(){
     if(!G.code){G.code=genCode();save()}
     if(G.phase==='clue'||G.phase==='finalClue'){if(timeLeft()<=0)G.endsAt=Date.now()+5000}
     render();hostNet();setInterval(publish,4000);
+    loadPics().then(loadRepoPics).then(()=>render());
   } else {prender();playerNet()}
 }
 window.addEventListener('hashchange',()=>location.reload());
