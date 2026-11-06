@@ -188,56 +188,56 @@ const JOIN_PARAM = (new URLSearchParams(location.search).get('join')||'').toUppe
 const PEER_PREFIX = 'bbjeopardy-';
 const VALUES = [200,400,600,800,1000];
 const LET = ['A','B','C','D'];
-const STORE_HOST = 'bbj-host-v1', STORE_ME = 'bbj-me-v1';
+const STORE_HOST = 'bbj-host-v2', STORE_ME = 'bbj-me-v1';
 
 /* ================= TRIVIA ================= */
 // a = index of the correct option (options get shuffled each new game)
 const DATA = {
   cats: [
     { name: "Bikini Bottom Locals", clues: [
-      { q: "What kind of sea creature is Patrick Star?", o: ["A starfish","A sea urchin","A sand dollar","A jellyfish"], a: 0 },
-      { q: "Which instrument does Squidward play (badly)?", o: ["Clarinet","Oboe","Trumpet","Saxophone"], a: 0 },
-      { q: "Sandy Cheeks the squirrel is proudly from which U.S. state?", o: ["Texas","Oklahoma","Montana","Florida"], a: 0 },
-      { q: "What is the name of Plankton's computer wife?", o: ["Karen","Linda","Susan","Debra"], a: 0 },
-      { q: "SpongeBob's long-suffering boating teacher, Mrs. Puff, is what kind of fish?", o: ["A pufferfish","A blowfish shark","A clownfish","A grouper"], a: 0 }
+      { q: "Squidward's house is shaped like what?", o: ["An Easter Island head","A tiki totem","A diving helmet","A lighthouse"], a: 0 },
+      { q: "What is Mr. Krabs' first name?", o: ["Eugene","Edgar","Ernest","Everett"], a: 0 },
+      { q: "What is Plankton's first name?", o: ["Sheldon","Stanley","Sherman","Seymour"], a: 0 },
+      { q: "What are the names of SpongeBob's parents?", o: ["Harold and Margaret","Herb and Margie","Howard and Martha","Hank and Marge"], a: 0 },
+      { q: "What are the names of Patrick's parents?", o: ["Herb and Margie","Harold and Margaret","Hank and Mildred","Herman and Maggie"], a: 0 }
     ]},
     { name: "Krusty Krab Kitchen", clues: [
-      { q: "What is the Krusty Krab's world-famous signature burger?", o: ["The Krabby Patty","The Kelp Burger","The Coral Bun","The Barnacle Burger"], a: 0 },
-      { q: "Mr. Krabs' daughter Pearl is what kind of animal?", o: ["A whale","A crab","A dolphin","A seal"], a: 0 },
-      { q: "What is the name of Plankton's restaurant across the street?", o: ["The Chum Bucket","The Chum Shack","Plankton's Pit","The Bait Bucket"], a: 0 },
-      { q: "What is SpongeBob's official job at the Krusty Krab?", o: ["Fry cook","Cashier","Manager","Dishwasher"], a: 0 },
-      { q: "According to the 'Krusty Krab Training Video,' what was the building before it became the Krusty Krab?", o: ["A retirement home","A lighthouse","A bowling alley","A shipwreck"], a: 0 }
+      { q: "The Krusty Krab building is shaped like what?", o: ["A lobster trap","A treasure chest","A crab shell","A fishing net"], a: 0 },
+      { q: "In 'Patty Hype,' what colorful burgers does SpongeBob invent?", o: ["Pretty Patties","Rainbow Patties","Fancy Patties","Party Patties"], a: 0 },
+      { q: "In 'Pickles,' where was the customer hiding the pickles SpongeBob supposedly forgot?", o: ["Under his tongue","Under the bun","In his pocket","Stuck to his tray"], a: 0 },
+      { q: "In the 'Krusty Krab Training Video,' what does P.O.O.P. stand for?", o: ["People Order Our Patties","Please Order Our Patties","Put Onions On Patties","Patties Only, Order Promptly"], a: 0 },
+      { q: "In 'The Fry Cook Games,' which restaurant does Patrick compete for?", o: ["The Chum Bucket","The Krusty Krab","Weenie Hut Jr's","Fancy!"], a: 0 }
     ]},
     { name: "Famous Episodes", clues: [
-      { q: "What is the name of SpongeBob's pet snail?", o: ["Gary","Larry","Barry","Terry"], a: 0 },
-      { q: "SpongeBob lives in what kind of house under the sea?", o: ["A pineapple","A coconut","A watermelon","A mango"], a: 0 },
-      { q: "In 'Band Geeks,' what song does Squidward's band perform at the Bubble Bowl?", o: ["Sweet Victory","Goofy Goober Rock","Ripped Pants","The Campfire Song"], a: 0 },
-      { q: "In 'Rock Bottom,' SpongeBob gets stranded after repeatedly missing what?", o: ["The bus home","His boat","The last train","A jellyfish ride"], a: 0 },
-      { q: "In 'The Camping Episode,' which creature attacks Squidward?", o: ["The Sea Bear","The Sea Rhinoceros","The Alaskan Bull Worm","A giant clam"], a: 0 }
+      { q: "In 'Ripped Pants,' where does SpongeBob first rip his pants?", o: ["Goo Lagoon","Jellyfish Fields","Glove World","Rock Bottom"], a: 0 },
+      { q: "In 'Graveyard Shift,' which spooky legend does Squidward tell SpongeBob?", o: ["The Hash-Slinging Slasher","The Spatula Phantom","The Headless Fry Cook","The Grill Ghoul"], a: 0 },
+      { q: "In 'Club SpongeBob,' what do they consult for every single decision?", o: ["The Magic Conch","A Magic 8-Ball","Gary","The Treehouse Rulebook"], a: 0 },
+      { q: "In 'Survival of the Idiots,' what nicknames do SpongeBob and Patrick give themselves?", o: ["Dirty Dan and Pinhead Larry","Dirty Dave and Pinhead Barry","Rotten Ralph and Dimwit Doug","Big Dan and Little Larry"], a: 0 },
+      { q: "At the end of 'Graveyard Shift,' who turns out to be flickering the lights?", o: ["Nosferatu","Plankton","The Flying Dutchman","The new fry cook"], a: 0 }
     ]},
-    { name: "Who Said It?", clues: [
-      { q: "Who bounces out of bed shouting \"I'm ready! I'm ready!\"?", o: ["SpongeBob","Patrick","Plankton","Larry the Lobster"], a: 0 },
-      { q: "Who asks the band: \"Is mayonnaise an instrument?\"", o: ["Patrick","SpongeBob","Mr. Krabs","Sandy"], a: 0 },
-      { q: "Who said: \"The inner machinations of my mind are an enigma\"?", o: ["Patrick","Squidward","Plankton","Gary"], a: 0 },
-      { q: "In the opening theme song, who is the pirate doing the singing?", o: ["Painty the Pirate","Patchy the Pirate","The Flying Dutchman","Captain Krabs"], a: 0 },
-      { q: "Which background fish famously screams \"My leg!\"?", o: ["Fred","Tom","Harold","Nat"], a: 0 }
+    { name: "Behind the Voice", clues: [
+      { q: "Who is the voice of Patrick Star?", o: ["Bill Fagerbakke","Rodger Bumpass","Clancy Brown","Tom Kenny"], a: 0 },
+      { q: "Who is the voice of Mr. Krabs?", o: ["Clancy Brown","Ron Perlman","Mark Hamill","Rodger Bumpass"], a: 0 },
+      { q: "Besides SpongeBob, Tom Kenny also voices which character?", o: ["Gary","Plankton","Larry the Lobster","Squidward"], a: 0 },
+      { q: "Who is the voice of Plankton?", o: ["Mr. Lawrence","Dee Bradley Baker","Carlos Alazraqui","Jeff Bennett"], a: 0 },
+      { q: "Which Hollywood legend voiced Mermaid Man?", o: ["Ernest Borgnine","Tim Conway","Adam West","Burgess Meredith"], a: 0 }
     ]},
     { name: "Behind the Bubbles", clues: [
-      { q: "Who created SpongeBob SquarePants?", o: ["Stephen Hillenburg","Matt Groening","Butch Hartman","Seth MacFarlane"], a: 0 },
-      { q: "Before animation, the show's creator worked as what?", o: ["A marine biology teacher","A dentist","A ship captain","A fry cook"], a: 0 },
-      { q: "In what year did SpongeBob first premiere on Nickelodeon?", o: ["1999","1996","2001","2003"], a: 0 },
-      { q: "Which actor is the voice of SpongeBob?", o: ["Tom Kenny","Bill Fagerbakke","Rodger Bumpass","Clancy Brown"], a: 0 },
-      { q: "What was SpongeBob's original name during development?", o: ["SpongeBoy","Sponge Sam","Bobby Sponge","Spongey McSquare"], a: 0 }
+      { q: "The show's French narrator is a nod to which famous ocean explorer?", o: ["Jacques Cousteau","Jacques Piccard","Robert Ballard","Philippe Tailliez"], a: 0 },
+      { q: "Which episode aired first when the show premiered in 1999?", o: ["Help Wanted","Reef Blower","Tea at the Treedome","Bubblestand"], a: 0 },
+      { q: "In 'Help Wanted,' what swarms the Krusty Krab?", o: ["Anchovies","Sardines","Jellyfish","Piranhas"], a: 0 },
+      { q: "Before SpongeBob, creator Stephen Hillenburg made an educational comic starring 'Bob the Sponge.' What was it called?", o: ["The Intertidal Zone","Tide Pool Tales","The Reef Report","Life in the Shallows"], a: 0 },
+      { q: "In 'Help Wanted,' whose falsetto ukulele recording plays while SpongeBob feeds the anchovies?", o: ["Tiny Tim","Don Ho","Wayne Newton","Rudy Vallee"], a: 0 }
     ]},
     { name: "Deep Sea Deep Cuts", clues: [
-      { q: "Despite the name, Squidward is actually what kind of animal?", o: ["An octopus","A squid","A cuttlefish","A nautilus"], a: 0 },
-      { q: "What is the name of Squidward's rich, snobby rival?", o: ["Squilliam Fancyson","Squidney Richmond","Squiliam Moneybags","Squart Fancypants"], a: 0 },
-      { q: "Which muscle-bound lifeguard is Larry the ___?", o: ["Lobster","Shrimp","Crab","Eel"], a: 0 },
-      { q: "What is the name of Mermaid Man's sidekick?", o: ["Barnacle Boy","Coral Kid","Shrimp Lad","Kelp Boy"], a: 0 },
-      { q: "What is SpongeBob's home address?", o: ["124 Conch Street","120 Conch Street","42 Wallaby Way","1 Kelp Avenue"], a: 0 }
+      { q: "What is Squidward's last name?", o: ["Tentacles","Inkwell","Suckerton","Squidly"], a: 0 },
+      { q: "In 'Squidville,' what is the name of the gated community Squidward moves to?", o: ["Tentacle Acres","Squid Estates","Inkwood Heights","Calamari Commons"], a: 0 },
+      { q: "In 'Wet Painters,' the paint ends up on which of Mr. Krabs' prized possessions?", o: ["His first dollar","The secret formula","His ship's wheel","His Navy medal"], a: 0 },
+      { q: "In 'The Paper,' what piece of trash does Squidward toss away?", o: ["A gum wrapper","A newspaper","A Krabby Patty wrapper","A coupon"], a: 0 },
+      { q: "According to Nickelodeon, what is SpongeBob's official birthday?", o: ["July 14, 1986","May 1, 1999","August 12, 1985","June 6, 1987"], a: 0 }
     ]}
   ],
-  final: { cat: "The Big Screen", q: "In what year did The SpongeBob SquarePants Movie hit theaters?", o: ["2004","2002","2006","2008"], a: 0 }
+  final: { cat: "The Big Screen", q: "In The SpongeBob SquarePants Movie (2004), which real-life star carries SpongeBob and Patrick back to Bikini Bottom?", o: ["David Hasselhoff","Antonio Banderas","Keanu Reeves","Dwayne Johnson"], a: 0 }
 };
 
 /* ================= HELPERS ================= */
