@@ -555,6 +555,10 @@ function removePic(id){if(REPO_PICS[id]){delete REPO_PICS[id];delete PICS[id];re
 const picCount=()=>Object.keys(PICS).length;
 /* ---- start sound (host laptop) ---- */
 let SOUND_URL=null, SOUND_FROM='';
+let WAGER_URL=null;
+async function loadWagerSound(){if(!/^https?:$/.test(location.protocol))return;const base=location.href.split(/[?#]/)[0].replace(/[^/]*$/,'');
+  for(const ext of ['mp3','m4a','wav','ogg']){try{const r=await fetch(base+'sounds/wager.'+ext,{method:'HEAD'});if(r.ok){WAGER_URL=base+'sounds/wager.'+ext;return}}catch(e){}}}
+function playWagerSound(){if(G&&!G.sound)return;if(WAGER_URL){try{const a=new Audio(WAGER_URL);a.volume=.95;a.play().catch(()=>sfx.dd())}catch(e){sfx.dd()}}else sfx.dd()}
 async function loadSound(){
   if(picDB){await new Promise(res=>{try{const q=picDB.transaction('pics').objectStore('pics').get('__startsound');q.onsuccess=()=>{if(q.result){SOUND_URL=URL.createObjectURL(q.result);SOUND_FROM='laptop'}res()};q.onerror=()=>res()}catch(e){res()}})}
   if(!SOUND_URL&&/^https?:$/.test(location.protocol)){const base=location.href.split(/[?#]/)[0].replace(/[^/]*$/,'');
@@ -727,7 +731,7 @@ function reveal(){
 function cycle(p){const R=G.results[G.current];if(!R)return;R.r[p]=R.r[p]===''?'right':R.r[p]==='right'?'wrong':'';save();render();publish()}
 function cycleFinal(p){G.fres[p]=!G.fres[p]?'right':G.fres[p]==='right'?'wrong':'';save();render();publish()}
 function backToBoard(){G.current=null;G.answers={};setPhase(Object.keys(G.used).length>=totalClues()?'board':'board')}
-function startFinal(){G.key='f'+Date.now().toString(36);G.wagers={};G.fanswers={};G.fres={};G.answers={};sfx.dd();setPhase('finalWager')}
+function startFinal(){G.key='f'+Date.now().toString(36);G.wagers={};G.fanswers={};G.fres={};G.answers={};playWagerSound();setPhase('finalWager')}
 function showFinalClue(){
   document.querySelectorAll('[data-wager]').forEach(inp=>{const p=inp.dataset.wager;const v=parseInt(inp.value,10);if(!isNaN(v))G.wagers[p]=Math.max(0,Math.min(v,maxWager(p)))});
   G.players.forEach(p=>{if(G.wagers[p]==null)G.wagers[p]=0});
@@ -1171,7 +1175,7 @@ function boot(){
     if(G.phase==='pics'||G.phase==='lobby')G.phase='title';
     if(G.phase==='clue'||G.phase==='finalClue'){if(timeLeft()<=0)G.endsAt=Date.now()+5000}
     render();hostNet();setInterval(publish,4000);
-    loadPics().then(loadRepoPics).then(loadSound).then(loadTVid).then(loadMusic).then(()=>render());
+    loadPics().then(loadRepoPics).then(loadSound).then(loadTVid).then(loadMusic).then(loadWagerSound).then(()=>render());
   } else {document.body.classList.add('phone-mode');prender();playerNet()}
 }
 window.addEventListener('hashchange',()=>location.reload());
