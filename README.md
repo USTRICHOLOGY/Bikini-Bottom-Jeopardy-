@@ -13,17 +13,13 @@ The board has 6 categories and 30 questions, plus a hidden Daily Double and Fina
 Phones connect to the big screen directly through PeerJS (a free WebRTC service). It works best with everyone on the same Wi-Fi.
 
 ## Picture round ("Picture This")
-A 7th category with "Who / Where / What is this?" questions about characters, places and items. Each picture starts zoomed in and pulls back as the clock runs down, and the bigger the dollar value, the further in it starts. Wrong answers are drawn from the same kind of thing (places vs. places).
+A 7th category with "Who / Where / What is this?" questions. Each picture starts zoomed in and pulls back as the clock runs down, and the higher the dollar value, the further in it starts. Pictures load from `images/`, using the file names listed in `images/README.md`.
 
-The column only appears once you've added pictures. There are two ways to add them:
-- **On the big screen:** Players & QR → **Picture setup**. Click a card and paste an image, drop a file on it, or upload one. Pictures saved this way stay on that laptop only.
-- **In the repo:** add files to `images/` using the file names in `images/README.md`. Every device then picks them up.
-
-## Start transition
-Pressing **Start the game** plays a bubble transition on the big screen and every phone. To add your own sound effect: in the lobby, find **Start transition**, tap **Load sound** and pick an audio file (MP3, M4A, WAV or OGG). The sound saves on that laptop, and **Preview** plays it with the animation. If no sound is loaded, the game plays built-in bubble pops. To use a bubble video, tap **Load video** under **Bubble video** and pick a WebM with a transparent background. It plays on the big screen, and phones show built-in CSS bubbles. You can also put files at `sounds/transition.mp3` and `sounds/bubbles.webm` in the repo.
+## Transitions
+There's an animated title screen. Pressing Start, starting the game, and opening any question each play the bubble transition, using `sounds/transition.mp3` and `sounds/bubbles.webm` (built-in bubbles if those are missing).
 
 ## Art
 The UI art in `ui/` (desktop and phone backgrounds, logo sign, blue board tiles, wooden category signs, clue card, framed lobby boards, four painted answer buttons) is original hand-painted-style artwork generated with Higgsfield (GPT Image 2.6), using painted reference stills for texture and color only.
 
 ## Question music
-Opening any clue plays the bubble transition. To add music that plays while a question is up, tap **Add tracks** under **Question music** in the lobby (tracks are saved on that laptop), or put files at `sounds/music1.mp3`, `sounds/music2.mp3` and so on, up to `music12.mp3`. A random track plays for each question, fades in, and fades out when the answer is revealed.
+Add tracks as `sounds/music1.mp3`, `sounds/music2.mp3` and so on, up to `music12.mp3`. A random track fades in while each question is up and fades out at the reveal.

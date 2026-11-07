@@ -355,6 +355,33 @@ body.phone-mode{background:#1aa6c4 url(ui/bg-phone.jpg) center bottom/cover fixe
 .cluescreen.rev .opt .L{width:48px;height:48px;font-size:22px}
 .cluescreen.rev .hint{font-size:12px;padding:4px 12px}
 .logoimg{height:104px}
+
+/* ===== title screen ===== */
+.titlewrap{flex:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;padding:30px}
+.titlelogo{width:min(72vw,900px);max-height:62vh;object-fit:contain;filter:drop-shadow(0 18px 30px rgba(10,30,50,.45));
+  animation:logoIn 1.5s cubic-bezier(.2,1.4,.4,1) both,logoBob 4.5s ease-in-out 1.5s infinite,logoGlow 1.6s ease-in-out 1.5s infinite}
+@keyframes logoIn{0%{transform:translateY(-110vh) rotate(-10deg) scale(.55)}55%{transform:translateY(4vh) rotate(4deg) scale(1.06)}75%{transform:translateY(-1vh) rotate(-2deg) scale(.98)}100%{transform:none}}
+@keyframes logoBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-14px) rotate(.8deg)}}
+@keyframes logoGlow{0%,100%{filter:drop-shadow(0 18px 30px rgba(10,30,50,.45)) brightness(1)}50%{filter:drop-shadow(0 18px 30px rgba(10,30,50,.45)) drop-shadow(0 0 22px rgba(255,230,140,.55)) brightness(1.06)}}
+.titlestart{font-size:30px!important;height:74px!important;padding:0 56px!important;border-image-width:37px 37px!important;animation:popIn .5s cubic-bezier(.2,1.6,.4,1) 1.3s both,startPulse 1.6s ease-in-out 1.9s infinite}
+@keyframes popIn{0%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:scale(1)}}
+@keyframes startPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.titlehint{color:#fff;font-weight:800;font-size:18px;text-shadow:0 2px 4px rgba(0,0,0,.5);animation:popIn .5s ease 1.6s both}
+/* ===== 9-slice wooden frames: content always inside the beams ===== */
+.panel,.lobby .panel,.modal .panel{--bt:78px;--bs:64px;--bb:76px;background:none!important;border-style:solid;border-width:var(--bt) var(--bs) var(--bb) var(--bs);
+  border-image:url(ui/panel.webp) 162 135 156 135 fill / var(--bt) var(--bs) var(--bb) var(--bs) stretch;padding:4px 10px 8px!important;box-sizing:border-box}
+.wcard{--bt:46px;--bs:38px;--bb:46px;background:none!important;border-style:solid;border-width:var(--bt) var(--bs) var(--bb) var(--bs);
+  border-image:url(ui/panel.webp) 162 135 156 135 fill / var(--bt) var(--bs) var(--bb) var(--bs) stretch;padding:0 4px!important}
+.lobby .panel .row{flex-wrap:wrap}
+.lobby{align-items:stretch}
+/* ===== clue card: picks a plate that matches the text, never stretched ===== */
+.cluetext{box-sizing:border-box;width:min(1150px,92vw);max-width:none;display:flex;align-items:center;justify-content:center;overflow:hidden;background-size:100% 100%!important}
+.ph-clue{box-sizing:border-box;width:100%;display:flex;align-items:center;overflow:hidden;background-size:100% 100%!important}
+.cluetext,.cluescreen.rev .cluetext,.cluescreen.pic .cluetext{padding:2.4% 5.5%;max-width:none}
+.cluescreen.rev .cluetext{width:min(1000px,88vw)}
+.cluescreen.pic .cluetext{width:min(520px,50vw)}
+.cluescreen.pic{gap:14px}
+.cluescreen.pic .picframe{max-height:38vh}
 /* transition logo */
 .bubwipe .ttl img{width:min(70vw,900px);filter:drop-shadow(0 12px 30px rgba(0,0,0,.45))}
 </style>
@@ -764,7 +791,7 @@ function joinUrl(){
 
 function publicState(){
   const s=scores();
-  const st={tr:G.tr||0,ph:G.phase==='pics'?'lobby':G.phase,pl:G.players,sc:s,k:G.key,ans:Object.keys(G.answers),end:timeLeft(),tot:G.phase==='finalClue'?30000:G.timer*1000,t:Date.now()};
+  const st={tr:G.tr||0,ph:(G.phase==='pics'||G.phase==='title')?'lobby':G.phase,pl:G.players,sc:s,k:G.key,ans:Object.keys(G.answers),end:timeLeft(),tot:G.phase==='finalClue'?30000:G.timer*1000,t:Date.now()};
   if(G.phase==='dd'){const C=clueOf(G.current);st.c={cat:C.cat,v:C.v*2,dd:1}}
   if(G.phase==='clue'||G.phase==='reveal'){const C=clueOf(G.current);st.c={cat:C.cat,v:C.v*(G.current===G.dd?2:1),q:C.q,o:C.o,dd:G.current===G.dd?1:0,pic:C.img?1:0}}
   if(G.phase==='reveal'){const R=G.results[G.current];st.rv={a:clueOf(G.current).a,r:R.r}}
@@ -796,6 +823,25 @@ document.addEventListener('dragover',e=>{if(MODE==='host'&&G&&G.phase==='pics'){
 document.addEventListener('drop',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;e.preventDefault();const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])];if(!fs.length)return;const c=e.target.closest('[data-pic]');if(c&&fs.length===1&&!/\.zip$/i.test(fs[0].name)){picSel=c.dataset.pic;savePic(c.dataset.pic,fs[0])}else bulkImport(fs)});
 document.addEventListener('paste',e=>{if(MODE!=='host'||!G||G.phase!=='pics'||!picSel)return;const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(x=>x.type.startsWith('image/'));if(it){e.preventDefault();savePic(picSel,it.getAsFile())}});
 
+// ---- clue card fitting: choose a plate whose real proportions fit the text (no stretching) ----
+const CARDS=[{src:'ui/card-l.webp',r:4.924},{src:'ui/card-m.webp',r:3.499},{src:'ui/card-t.webp',r:2.743},{src:'ui/card.webp',r:1.766}];
+function fitCard(el,phone){
+  if(!el)return;
+  const list=phone?CARDS.slice(1):CARDS;
+  const base=phone?20:(el.closest('.pic')?34:Math.max(30,Math.min(52,window.innerWidth*0.033)));
+  const minOK=phone?16:(el.closest('.rev')||el.closest('.pic')?22:30);
+  el.style.padding=phone?'4.5% 7%':'2.4% 5.5%';
+  for(let i=0;i<list.length;i++){
+    const c=list[i];el.style.backgroundImage=`url(${c.src})`;el.style.aspectRatio=String(c.r);
+    let fs=base;el.style.fontSize=fs+'px';
+    while(el.scrollHeight>el.clientHeight+1&&fs>minOK){fs-=1;el.style.fontSize=fs+'px'}
+    if(el.scrollHeight<=el.clientHeight+1)return;
+  }
+  let fs=minOK;while(el.scrollHeight>el.clientHeight+1&&fs>12){fs-=1;el.style.fontSize=fs+'px'}
+}
+function fitCards(){document.querySelectorAll('.cluetext').forEach(el=>fitCard(el,false));document.querySelectorAll('.ph-clue').forEach(el=>fitCard(el,true))}
+window.addEventListener('resize',()=>fitCards());
+
 // ---- host render ----
 function hostHeader(right){
   return `<div class="top"><div class="logo display"><img class="logoimg" src="ui/logo.webp" alt="Bikini Bottom Jeopardy!" onerror="this.outerHTML='<span class=&quot;a&quot;>BIKINI BOTTOM</span><span class=&quot;b&quot;>JEOPARDY!</span>'"></div><div class="toolbar">${right||''}</div></div>`;
@@ -806,7 +852,16 @@ function scoreCards(clickable){
 }
 function render(){
   if(MODE!=='host')return;
+  renderInner();requestAnimationFrame(fitCards);if(document.fonts)document.fonts.ready.then(fitCards);
+}
+function renderInner(){
   const app=$('#app');const ph=G.phase;
+  if(ph==='title'){
+    app.innerHTML=`<div class="titlewrap"><img class="titlelogo" src="ui/logo.webp" alt="Bikini Bottom Jeopardy!" onerror="this.outerHTML='<div class=&quot;dd&quot;>BIKINI BOTTOM<br>JEOPARDY!</div>'">
+      <button class="btn big titlestart" data-act="title-go">Start ▶</button>
+      <div class="titlehint">Grab your phones. You'll join on the next screen.</div></div>`;
+    return;
+  }
   if(ph==='lobby')return renderLobby(app);
   if(ph==='pics'){
     const list=PIC_POOL.filter(p=>picFilter==='all'||p.t===picFilter);
@@ -902,20 +957,10 @@ function renderLobby(app){
       <div class="settings" style="margin-top:22px">
         <div class="set">Answer timer<div class="seg">${[15,20,30,45].map(t=>`<button class="${G.timer===t?'on':''}" data-timer="${t}">${t}s</button>`).join('')}</div></div>
         <div class="set">Wrong answers<div class="seg"><button class="${!G.minus?'on':''}" data-minus="0">Score 0</button><button class="${G.minus?'on':''}" data-minus="1">Lose points</button></div></div>
-        <div class="set">Start transition<div class="row" style="gap:6px;justify-content:flex-end"><span class="hint" style="font-size:13px">${SOUND_URL?(SOUND_FROM==='site'?'🔊 From site':'🔊 Custom sound'):'Built-in bubbles'}</span>
-          <button class="btn ghost sm" data-act="sndload">${SOUND_URL&&SOUND_FROM==='laptop'?'Replace':'Load sound'}</button>${SOUND_URL&&SOUND_FROM==='laptop'?'<button class="btn ghost sm" data-act="sndrm">Remove</button>':''}<button class="btn sm" data-act="sndtest">Preview</button>
-          <input type="file" id="sndin" accept="audio/*,.mp3,.m4a,.wav,.ogg" hidden></div></div>
-        <div class="set">Bubble video<div class="row" style="gap:6px;justify-content:flex-end"><span class="hint" style="font-size:13px">${TVID_URL?(TVID_FROM==='site'?'🎞️ From site':'🎞️ Custom video'):'Built-in bubbles'}</span>
-          <button class="btn ghost sm" data-act="vidload">${TVID_URL&&TVID_FROM==='laptop'?'Replace':'Load video'}</button>${TVID_URL&&TVID_FROM==='laptop'?'<button class="btn ghost sm" data-act="vidrm">Remove</button>':''}
-          <input type="file" id="vidin" accept="video/webm,.webm" hidden></div></div>
-        <div class="set">Question music<div class="row" style="gap:6px;justify-content:flex-end"><span class="hint" style="font-size:13px">${MUSIC.length?'🎵 '+MUSIC.length+' track'+(MUSIC.length===1?'':'s'):'None yet'}</span>
-          <button class="btn ghost sm" data-act="musload">Add tracks</button>${MUSIC_LOCAL?'<button class="btn ghost sm" data-act="musclr">Clear</button>':''}
-          <input type="file" id="musin" accept="audio/*,.mp3,.m4a,.wav,.ogg" multiple hidden></div></div>
         <div class="set">Sound<div class="seg"><button class="${G.sound?'on':''}" data-sound="1">On</button><button class="${!G.sound?'on':''}" data-sound="0">Off</button></div></div>
       </div>
       <div class="row" style="justify-content:flex-start;margin-top:24px">
         <button class="btn big" data-act="start">${inGame?'Resume game':'Start the game'} →</button>
-        <button class="btn teal sm" data-act="pics">📷 Picture setup (${picCount()})</button>
         ${inGame?'<button class="btn ghost" data-act="reset">New game</button>':''}
       </div>
     </div>
@@ -978,6 +1023,7 @@ document.addEventListener('click',e=>{
   if(a==='picsel'){picSel=t.dataset.id;render();return}
   if(a==='reset'){syncNames();openModal('Start a new game?','Scores and the board reset. Player names stay.',()=>{newGame(G.players);render();publish()});return}
   if(a==='lobby'){setPhase('lobby');return}
+  if(a==='title-go'){if(transitioning)return;transitioning=true;G.tr=(G.tr||0)+1;publish();playStartSound();bubbleTransition(()=>{transitioning=false;setPhase('lobby')});return}
   if(a==='newcode'){syncNames();newCode();return}
   if(a==='setbase'){syncNames();G.base=($('#baseurl').value||'').trim();save();render();return}
   if(a==='board'){syncNames();backToBoard();return}
@@ -1100,6 +1146,7 @@ function prender(){
     body=`<div style="font-size:70px">${rank===1?'🏆':rank===2?'🥈':rank===3?'🥉':'🫧'}</div><div class="ph-big">${rank===1?'You win!':ord(rank)+' place'}</div><div class="ph-sub">Final score ${money(sc)}</div>`;
   }
   app.innerHTML=`<div class="phone">${top(sc)}<div class="ph-body">${body}</div></div>`;
+  requestAnimationFrame(fitCards);
 }
 setInterval(()=>{if(MODE!=='player'||!H)return;if(H.ph==='clue'||H.ph==='finalClue'){const b=$('#ptbar');const ms=hostEnd();const total=H.tot||20000;
   if(b)b.style.width=Math.min(100,100*ms/Math.max(total,1))+'%';if(ms<=0&&b)prender()}},250);
@@ -1121,7 +1168,7 @@ function boot(){
     G=lsGet(STORE_HOST);
     if(!G||!G.opts||!G.players){G=null;newGame()}
     if(!G.code){G.code=genCode();save()}
-    if(G.phase==='pics')G.phase='lobby';
+    if(G.phase==='pics'||G.phase==='lobby')G.phase='title';
     if(G.phase==='clue'||G.phase==='finalClue'){if(timeLeft()<=0)G.endsAt=Date.now()+5000}
     render();hostNet();setInterval(publish,4000);
     loadPics().then(loadRepoPics).then(loadSound).then(loadTVid).then(loadMusic).then(()=>render());
