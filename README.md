@@ -22,6 +22,8 @@ There's an animated title screen. Pressing Start, starting the game, and opening
 The UI art in `ui/` (desktop and phone backgrounds, logo sign, blue board tiles, wooden category signs, clue card, framed lobby boards, four painted answer buttons) is original hand-painted-style artwork generated with Higgsfield (GPT Image 2.6), using painted reference stills for texture and color only.
 
 ## Question music
+Lobby music at `sounds/lobby.mp3` loops on the title and setup screens and fades out when the game starts.
+
 A sound effect at `sounds/wager.mp3` plays when Final Jeopardy wagering starts.
 
 Add tracks as `sounds/music1.mp3`, `sounds/music2.mp3` and so on, up to `music12.mp3`. A random track fades in while each question is up and fades out at the reveal.
