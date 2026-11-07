@@ -89,6 +89,17 @@ input{font-family:inherit}
 .cluescreen.pic{gap:16px;padding-top:6px}
 .cluescreen.pic .cluetext{font-size:clamp(26px,2.8vw,44px)}
 .cluescreen.pic .opt{padding:12px 18px}
+.bubwipe{position:fixed;inset:0;z-index:200;pointer-events:none;overflow:hidden}
+.bubwipe .veil{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,#4fc3ff 0%,#1478c4 45%,#0a3d6b 100%);opacity:0;animation:veil 3s ease-in-out forwards}
+@keyframes veil{0%{opacity:0}30%{opacity:1}62%{opacity:1}100%{opacity:0}}
+.bubwipe .b{position:absolute;bottom:-40vmax;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0 6%,rgba(255,255,255,.35) 7%,rgba(160,225,255,.18) 40%,rgba(120,200,255,.08) 68%,rgba(255,255,255,.35) 71%,rgba(255,255,255,0) 74%);
+  animation:wipeUp var(--d) cubic-bezier(.35,.1,.45,1) var(--dl) forwards}
+@keyframes wipeUp{0%{transform:translate(0,0) scale(.55)}50%{transform:translate(var(--wx),-80vh) scale(1)}100%{transform:translate(calc(var(--wx) * -1),-175vh) scale(1.15)}}
+.bubwipe .ttl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;opacity:0;animation:ttl 3s ease forwards}
+.bubwipe .ttl .a{font-family:'Titan One';font-size:clamp(44px,8vw,120px);color:var(--sponge);text-shadow:0 6px 0 #b8860b,0 12px 30px rgba(0,0,0,.45);line-height:1}
+.bubwipe .ttl .b2{font-family:'Titan One';font-size:clamp(36px,6vw,90px);color:#fff;text-shadow:0 6px 0 #0a2590,0 12px 30px rgba(0,0,0,.45);line-height:1}
+@keyframes ttl{0%,28%{opacity:0;transform:scale(.4) rotate(-6deg)}40%{opacity:1;transform:scale(1.08) rotate(2deg)}48%{transform:scale(1) rotate(0)}64%{opacity:1;transform:scale(1)}78%,100%{opacity:0;transform:scale(1.3)}}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;padding:0 24px 30px}
 .pcard2{background:rgba(255,255,255,.07);border-radius:16px;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(255,255,255,.1);display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .15s}
 .pcard2.sel{box-shadow:inset 0 0 0 3px var(--sponge),0 0 0 3px rgba(255,225,77,.25)}
@@ -365,6 +376,36 @@ async function savePic(id,file){if(!file||!/^image\//.test(file.type))return;con
   if(PICS[id]&&PICS[id].startsWith('blob:'))URL.revokeObjectURL(PICS[id]);delete REPO_PICS[id];PICS[id]=URL.createObjectURL(blob);render()}
 function removePic(id){if(REPO_PICS[id]){delete REPO_PICS[id];delete PICS[id];render();return}if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').delete(id)}catch(e){}}if(PICS[id]&&PICS[id].startsWith('blob:'))URL.revokeObjectURL(PICS[id]);delete PICS[id];render()}
 const picCount=()=>Object.keys(PICS).length;
+/* ---- start sound (host laptop) ---- */
+let SOUND_URL=null, SOUND_FROM='';
+async function loadSound(){
+  if(picDB){await new Promise(res=>{try{const q=picDB.transaction('pics').objectStore('pics').get('__startsound');q.onsuccess=()=>{if(q.result){SOUND_URL=URL.createObjectURL(q.result);SOUND_FROM='laptop'}res()};q.onerror=()=>res()}catch(e){res()}})}
+  if(!SOUND_URL&&/^https?:$/.test(location.protocol)){const base=location.href.split(/[?#]/)[0].replace(/[^/]*$/,'');
+    for(const ext of ['mp3','m4a','wav','ogg']){try{const r=await fetch(base+'sounds/transition.'+ext,{method:'HEAD'});if(r.ok){SOUND_URL=base+'sounds/transition.'+ext;SOUND_FROM='site';break}}catch(e){}}}
+}
+function saveSound(file){if(!file)return;if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').put(file,'__startsound')}catch(e){}}
+  if(SOUND_URL&&SOUND_URL.startsWith('blob:'))URL.revokeObjectURL(SOUND_URL);SOUND_URL=URL.createObjectURL(file);SOUND_FROM='laptop';render()}
+function removeSound(){if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').delete('__startsound')}catch(e){}}if(SOUND_URL&&SOUND_URL.startsWith('blob:'))URL.revokeObjectURL(SOUND_URL);SOUND_URL=null;SOUND_FROM='';render()}
+const isAudio=f=>(f.type&&f.type.startsWith('audio/'))||/\.(mp3|m4a|wav|ogg)$/i.test(f.name||'');
+function playStartSound(force){
+  if(!force&&G&&!G.sound)return;
+  if(SOUND_URL){try{const a=new Audio(SOUND_URL);a.volume=.9;a.play().catch(()=>{})}catch(e){};return}
+  try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const t0=AC.currentTime;
+    for(let i=0;i<22;i++){const o=AC.createOscillator(),g=AC.createGain();o.type='sine';const t=t0+i*0.07+Math.random()*0.04;
+      const f=300+Math.random()*500;o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*2.6,t+.09);
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.09,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+.11);
+      o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.12)}}catch(e){}
+}
+function bubbleTransition(onMid){
+  const w=document.createElement('div');w.className='bubwipe';
+  let html='<div class="veil"></div>';
+  for(let i=0;i<46;i++){const sz=6+Math.random()*26;const left=Math.random()*110-5;
+    html+=`<div class="b" style="width:${sz}vmax;height:${sz}vmax;left:${left}%;--d:${(1.9+Math.random()*1.1).toFixed(2)}s;--dl:${(Math.random()*0.7).toFixed(2)}s;--wx:${(Math.random()*8-4).toFixed(1)}vw"></div>`}
+  html+='<div class="ttl"><div class="a">BIKINI BOTTOM</div><div class="b2">JEOPARDY!</div></div>';
+  w.innerHTML=html;document.body.appendChild(w);
+  if(onMid)setTimeout(onMid,1200);
+  setTimeout(()=>w.remove(),3400);
+}
 let importMsg='';
 function loadJSZip(){return window.JSZip?Promise.resolve(window.JSZip):new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';sc.onload=()=>res(window.JSZip);sc.onerror=rej;document.head.appendChild(sc)})}
 const stemOf=n=>String(n).split('/').pop().replace(/\.[^.]+$/,'').toLowerCase();
@@ -374,11 +415,13 @@ async function bulkImport(files){
     if(/\.zip$/i.test(f.name)){
       try{const JSZip=await loadJSZip();const z=await JSZip.loadAsync(f);
         for(const e of Object.values(z.files)){if(e.dir||/__MACOSX|\/\./.test(e.name))continue;
-          const id=stemOf(e.name);if(!/\.(jpe?g|png|webp|gif)$/i.test(e.name)){continue}
+          const id=stemOf(e.name);if(/\.(mp3|m4a|wav|ogg)$/i.test(e.name)){const bl=await e.async('blob');saveSound(new File([bl],e.name,{type:'audio/mpeg'}));ok++;continue}
+          if(!/\.(jpe?g|png|webp|gif)$/i.test(e.name)){continue}
           if(!picById(id)){skip.push(e.name.split('/').pop());continue}
           const blob=await e.async('blob');const ext=e.name.split('.').pop().toLowerCase();
           await savePic(id,new File([blob],e.name,{type:'image/'+(ext==='jpg'?'jpeg':ext)}));ok++}
       }catch(err){skip.push(f.name+' (could not open zip)')}
+    } else if(isAudio(f)){saveSound(f);ok++;
     } else if(f.type&&f.type.startsWith('image/')){
       const id=stemOf(f.name);if(picById(id)){await savePic(id,f);ok++}else skip.push(f.name);
     }
@@ -555,7 +598,7 @@ setInterval(()=>{
 let picFilter='all', picSel=null;
 // card selection, file input, drag-drop, paste for picture setup
 document.addEventListener('click',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;if(e.target.closest('button,a,input'))return;const c=e.target.closest('[data-pic]');if(c){picSel=c.dataset.pic;render()}},true);
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='bulkin'&&e.target.files.length){bulkImport([...e.target.files]);return}const id=e.target&&e.target.dataset&&e.target.dataset.picfile;if(id&&e.target.files[0]){savePic(id,e.target.files[0])}});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='sndin'&&e.target.files[0]){saveSound(e.target.files[0]);return}if(e.target&&e.target.id==='bulkin'&&e.target.files.length){bulkImport([...e.target.files]);return}const id=e.target&&e.target.dataset&&e.target.dataset.picfile;if(id&&e.target.files[0]){savePic(id,e.target.files[0])}});
 document.addEventListener('dragover',e=>{if(MODE==='host'&&G&&G.phase==='pics'){e.preventDefault();document.querySelectorAll('.pcard2.drag').forEach(x=>x.classList.remove('drag'));const c=e.target.closest('[data-pic]');if(c)c.classList.add('drag')}});
 document.addEventListener('drop',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;e.preventDefault();const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])];if(!fs.length)return;const c=e.target.closest('[data-pic]');if(c&&fs.length===1&&!/\.zip$/i.test(fs[0].name)){picSel=c.dataset.pic;savePic(c.dataset.pic,fs[0])}else bulkImport(fs)});
 document.addEventListener('paste',e=>{if(MODE!=='host'||!G||G.phase!=='pics'||!picSel)return;const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(x=>x.type.startsWith('image/'));if(it){e.preventDefault();savePic(picSel,it.getAsFile())}});
@@ -575,7 +618,7 @@ function render(){
   if(ph==='pics'){
     const list=PIC_POOL.filter(p=>picFilter==='all'||p.t===picFilter);
     const tiers=[1,2,3,4,5].map(d=>PIC_POOL.some(p=>p.d===d&&PICS[p.id]));
-    app.innerHTML=hostHeader(`<span class="status">📷 ${picCount()} of ${PIC_POOL.length} pictures ready</span><button class="btn teal sm" data-act="bulk">Import zip or files</button><input type="file" id="bulkin" accept="image/*,.zip" multiple hidden><button class="btn sm" data-act="picsdone">Done</button>`)+
+    app.innerHTML=hostHeader(`<span class="status">📷 ${picCount()} of ${PIC_POOL.length} pictures ready</span><button class="btn teal sm" data-act="bulk">Import zip or files</button><input type="file" id="bulkin" accept="image/*,audio/*,.zip,.mp3" multiple hidden><button class="btn sm" data-act="picsdone">Done</button>`)+
     `<div style="padding:0 24px 14px;display:flex;flex-direction:column;gap:10px">
       <div class="display" style="font-size:30px;color:var(--sponge)">Picture setup</div>
       <div style="border:3px dashed rgba(255,255,255,.25);border-radius:16px;padding:16px;text-align:center;font-weight:800;color:var(--muted)" id="bulkzone">⬇️ Drop the <b style="color:var(--white)">spongebob-pictures.zip</b> (or a bunch of image files) anywhere here. Files are matched to cards by name, like <code>rockbottom.jpg</code>.${importMsg?`<div style="color:var(--good);margin-top:6px">${esc(importMsg)}</div>`:''}</div>
@@ -666,6 +709,9 @@ function renderLobby(app){
       <div class="settings" style="margin-top:22px">
         <div class="set">Answer timer<div class="seg">${[15,20,30,45].map(t=>`<button class="${G.timer===t?'on':''}" data-timer="${t}">${t}s</button>`).join('')}</div></div>
         <div class="set">Wrong answers<div class="seg"><button class="${!G.minus?'on':''}" data-minus="0">Score 0</button><button class="${G.minus?'on':''}" data-minus="1">Lose points</button></div></div>
+        <div class="set">Start transition<div class="row" style="gap:6px;justify-content:flex-end"><span class="hint" style="font-size:13px">${SOUND_URL?(SOUND_FROM==='site'?'🔊 From site':'🔊 Custom sound'):'Built-in bubbles'}</span>
+          <button class="btn ghost sm" data-act="sndload">${SOUND_URL&&SOUND_FROM==='laptop'?'Replace':'Load sound'}</button>${SOUND_URL&&SOUND_FROM==='laptop'?'<button class="btn ghost sm" data-act="sndrm">Remove</button>':''}<button class="btn sm" data-act="sndtest">Preview</button>
+          <input type="file" id="sndin" accept="audio/*,.mp3,.m4a,.wav,.ogg" hidden></div></div>
         <div class="set">Sound<div class="seg"><button class="${G.sound?'on':''}" data-sound="1">On</button><button class="${!G.sound?'on':''}" data-sound="0">Off</button></div></div>
       </div>
       <div class="row" style="justify-content:flex-start;margin-top:24px">
@@ -716,7 +762,10 @@ document.addEventListener('click',e=>{
   if(t.dataset.rm!=null){syncNames();if(G.players.length>1){G.players.splice(+t.dataset.rm,1);save()}render();publish();return}
   const a=t.dataset.act;if(!a)return;
   if(a==='addpl'){syncNames();if(G.players.length<8){G.players.push('Player '+(G.players.length+1));save()}render();publish();return}
-  if(a==='start'){syncNames();if(!Object.keys(G.used).length)assignPics();setPhase('board');return}
+  if(a==='start'){syncNames();if(!Object.keys(G.used).length)assignPics();playStartSound();bubbleTransition(()=>setPhase('board'));return}
+  if(a==='sndload'){const i=$('#sndin');if(i)i.click();return}
+  if(a==='sndtest'){playStartSound(true);bubbleTransition(null);return}
+  if(a==='sndrm'){removeSound();return}
   if(a==='pics'){syncNames();setPhase('pics');return}
   if(a==='picsdone'){importMsg='';setPhase('lobby');return}
   if(a==='bulk'){const i=$('#bulkin');if(i)i.click();return}
@@ -779,7 +828,7 @@ function connectHost(){
   c.on('error',()=>{});
 }
 function onHostState(st){
-  const prevK=H&&H.k;H=st;Hrecv=Date.now();
+  const prevK=H&&H.k;if(H&&H.ph==='lobby'&&st.ph==='board')bubbleTransition(null);H=st;Hrecv=Date.now();
   if(prevK!==H.k&&(H.ph==='clue'||H.ph==='finalClue')){try{navigator.vibrate&&navigator.vibrate(80)}catch(e){}}
   prender();
 }
@@ -872,7 +921,7 @@ function boot(){
     if(G.phase==='pics')G.phase='lobby';
     if(G.phase==='clue'||G.phase==='finalClue'){if(timeLeft()<=0)G.endsAt=Date.now()+5000}
     render();hostNet();setInterval(publish,4000);
-    loadPics().then(loadRepoPics).then(()=>render());
+    loadPics().then(loadRepoPics).then(loadSound).then(()=>render());
   } else {prender();playerNet()}
 }
 window.addEventListener('hashchange',()=>location.reload());

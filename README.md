@@ -18,3 +18,6 @@ A 7th category with "Who / Where / What is this?" questions about characters, pl
 The column only appears once you've added pictures. There are two ways to add them:
 - **On the big screen:** Players & QR → **Picture setup**. Click a card and paste an image, drop a file on it, or upload one. Pictures saved this way stay on that laptop only.
 - **In the repo:** add files to `images/` using the file names in `images/README.md`. Every device then picks them up.
+
+## Start transition
+Pressing **Start the game** plays a bubble transition on the big screen and every phone. To add your own sound effect: in the lobby, find **Start transition**, tap **Load sound** and pick an audio file (MP3, M4A, WAV or OGG). The sound saves on that laptop, and **Preview** plays it with the animation. If no sound is loaded, the game plays built-in bubble pops. You can also put a file at `sounds/transition.mp3` in the repo.
