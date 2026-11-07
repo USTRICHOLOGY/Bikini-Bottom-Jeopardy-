@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="questions.js"></script>
 <style>
 :root{
   --deep:#041a36;--ocean:#0a3d6b;--sea:#0f5d93;--tile:#0b2fa8;--tile2:#0a2590;
@@ -158,6 +159,7 @@ button.lock:hover{filter:brightness(1.1)}
 .seg{display:flex;background:rgba(0,0,0,.25);border-radius:12px;padding:4px;gap:4px}
 .seg button{background:transparent;color:var(--white);font-weight:900;padding:8px 12px;border-radius:9px}
 .seg button.on{background:var(--sponge);color:var(--ink)}
+.seg .bankinfo{display:flex;align-items:center;padding:8px 10px;font-weight:800;font-size:14px;opacity:.9;white-space:nowrap}
 .status{font-size:13px;font-weight:800;padding:6px 10px;border-radius:99px;background:rgba(0,0,0,.25);display:inline-flex;gap:6px;align-items:center}
 
 /* final */
@@ -396,7 +398,7 @@ const JOIN_PARAM = (new URLSearchParams(location.search).get('join')||'').toUppe
 const PEER_PREFIX = 'bbjeopardy-';
 const VALUES = [200,400,600,800,1000];
 const LET = ['A','B','C','D'];
-const STORE_HOST = 'bbj-host-v3', STORE_ME = 'bbj-me-v1';
+const STORE_HOST = 'bbj-host-v4', STORE_HIST = 'bbj-history-v1', STORE_ME = 'bbj-me-v1';
 
 /* ================= TRIVIA ================= */
 // a = index of the correct option (options get shuffled each new game)
@@ -677,15 +679,50 @@ let phones={};        // name -> true when a phone is claiming it
 let peerCount=0;
 let lastPublishedSec=-1;
 
+/* ---------- question bank + no-repeat history ---------- */
+function bankCats(){
+  if(window.QBANK&&QBANK.cats&&QBANK.cats.length>=6)return QBANK.cats;
+  return DATA.cats.map(c=>({n:c.name,q:c.clues.map((cl,r)=>({id:'old-'+c.name+r,d:r+1,q:cl.q,a:cl.o[cl.a],w:cl.o.filter((_,i)=>i!==cl.a)}))}));
+}
+function bankFinals(){
+  if(window.QBANK&&QBANK.finals&&QBANK.finals.length)return QBANK.finals;
+  const F=DATA.final;return [{id:'old-final',cat:F.cat,q:F.q,a:F.o[F.a],w:F.o.filter((_,i)=>i!==F.a)}];
+}
+function hist(){const h=lsGet(STORE_HIST)||{};h.q=h.q||{};h.c=h.c||{};h.p=h.p||{};h.f=h.f||{};return h}
+function markSeen(kind,id){if(!id)return;const h=hist();h[kind][id]=Date.now();lsSet(STORE_HIST,h)}
+function bankStats(){
+  const h=hist(),qs=bankCats().flatMap(c=>c.q),fs=bankFinals();
+  const pics=PIC_POOL.filter(p=>PICS[p.id]);
+  return {total:qs.length+fs.length+pics.length,unseen:qs.filter(q=>!h.q[q.id]).length+fs.filter(f=>!h.f[f.id]).length+pics.filter(p=>!h.p[p.id]).length};
+}
+function buildBoard(){
+  const h=hist(),cats=bankCats(),R=new Map();
+  const rnd=x=>{if(!R.has(x))R.set(x,Math.random());return R.get(x)};
+  const unseen=c=>c.q.filter(q=>!h.q[q.id]).length;
+  // least recently played categories first; among those, ones with the most fresh questions
+  const pick=cats.slice().sort((a,b)=>(h.c[a.n]||0)-(h.c[b.n]||0)||(unseen(b)>=5)-(unseen(a)>=5)||rnd(a.n)-rnd(b.n)).slice(0,6);
+  const board=shuffle(pick).map(c=>{
+    const taken=new Set(),clues=[];
+    for(let t=1;t<=5;t++){
+      const best=c.q.filter(q=>!taken.has(q.id)).sort((a,b)=>
+        (!!h.q[a.id])-(!!h.q[b.id]) || Math.abs(a.d-t)-Math.abs(b.d-t) || (h.q[a.id]||0)-(h.q[b.id]||0) || rnd(a.id)-rnd(b.id))[0];
+      if(best){taken.add(best.id);clues.push(best)}
+    }
+    clues.sort((a,b)=>a.d-b.d);
+    return {name:c.n,clues:clues.map(q=>({id:q.id,q:q.q,a:q.a,w:q.w}))};
+  });
+  const fin=bankFinals().slice().sort((a,b)=>(h.f[a.id]||0)-(h.f[b.id]||0)||rnd(a.id)-rnd(b.id))[0];
+  return {cats:board,final:{id:fin.id,cat:fin.cat,q:fin.q,a:fin.a,w:fin.w}};
+}
 function newGame(players){
-  const opts={};
-  DATA.cats.forEach((c,ci)=>c.clues.forEach((cl,ri)=>{const id=ci+'-'+ri;const order=shuffle([0,1,2,3]);opts[id]={o:order.map(i=>cl.o[i]),a:order.indexOf(cl.a)}}));
-  const fo=shuffle([0,1,2,3]);
-  const ddRow=2+Math.floor(Math.random()*3), ddCol=Math.floor(Math.random()*DATA.cats.length);
+  const board=buildBoard(),opts={};
+  board.cats.forEach((c,ci)=>c.clues.forEach((cl,ri)=>{const o=shuffle([cl.a,...cl.w]);opts[ci+'-'+ri]={o,a:o.indexOf(cl.a)}}));
+  const fo=shuffle([board.final.a,...board.final.w]);
+  const ddRow=2+Math.floor(Math.random()*3), ddCol=Math.floor(Math.random()*board.cats.length);
   const prev=G||{};
   G={ players: players || prev.players || ['Andrew','Teagan','Presley'],
       phase:'lobby', used:{}, results:{}, answers:{}, current:null, key:'k'+Date.now().toString(36),
-      dd: ddCol+'-'+ddRow, opts, fopts:{o:fo.map(i=>DATA.final.o[i]),a:fo.indexOf(DATA.final.a)},
+      board, dd: ddCol+'-'+ddRow, opts, fopts:{o:fo,a:fo.indexOf(board.final.a)},
       minus: prev.minus ?? false, timer: prev.timer ?? 20, sound: prev.sound ?? true,
       endsAt:0, wagers:{}, fanswers:{}, fres:{}, picCol:[], code: prev.code || genCode(), base: prev.base || '' };
   save();
@@ -693,15 +730,15 @@ function newGame(players){
 function save(){lsSet(STORE_HOST,G)}
 const PIC_CAT='Picture This';
 const hasPicCol=()=>!!(G&&G.picCol&&G.picCol.some(Boolean));
-function totalClues(){return DATA.cats.length*5+((G&&G.picCol)||[]).filter(Boolean).length}
+function totalClues(){return G.board.cats.reduce((n,c)=>n+c.clues.length,0)+((G&&G.picCol)||[]).filter(Boolean).length}
 function clueOf(id){
   if(id.startsWith('p-')){const r=+id.slice(2);const P=picById(G.picCol[r]);return {cat:PIC_CAT,v:VALUES[r],q:PIC_Q[P.t],img:PICS[P.id]||'missing',zoom:1+0.5*(r+1),...G.opts[id]}}
-  const [c,r]=id.split('-').map(Number);const cl=DATA.cats[c].clues[r];return {cat:DATA.cats[c].name,v:VALUES[r],q:cl.q,...G.opts[id]}}
+  const [c,r]=id.split('-').map(Number);const cl=G.board.cats[c].clues[r];return {cat:G.board.cats[c].name,v:VALUES[r],q:cl.q,...G.opts[id]}}
 function assignPics(){
   const have=PIC_POOL.filter(p=>PICS[p.id]);G.picCol=[];if(!have.length){save();return}
   const used=new Set();
   for(let r=0;r<5;r++){
-    const pick=d=>shuffle(have.filter(p=>p.d===d&&!used.has(p.id)))[0];
+    const H=hist();const pick=d=>shuffle(have.filter(p=>p.d===d&&!used.has(p.id))).sort((a,b)=>(H.p[a.id]||0)-(H.p[b.id]||0))[0];
     let P=pick(r+1);for(let k=1;!P&&k<5;k++)P=pick(r+1+k)||pick(r+1-k);
     if(!P){G.picCol.push(null);continue}
     used.add(P.id);G.picCol.push(P.id);
@@ -736,6 +773,7 @@ function openClue(id){
 }
 function openClueNow(id){
   if(G.used[id])return;
+  if(id.startsWith('p-'))markSeen('p',G.picCol[+id.slice(2)]);else{const [c,r]=id.split('-').map(Number);const cl=G.board.cats[c].clues[r];if(cl)markSeen('q',cl.id)}
   G.current=id;G.answers={};G.key='k'+Date.now().toString(36);
   if(id===G.dd){sfx.dd();G.endsAt=0;setPhase('dd');return}
   startClueTimer();
@@ -751,7 +789,7 @@ function reveal(){
 function cycle(p){const R=G.results[G.current];if(!R)return;R.r[p]=R.r[p]===''?'right':R.r[p]==='right'?'wrong':'';save();render();publish()}
 function cycleFinal(p){G.fres[p]=!G.fres[p]?'right':G.fres[p]==='right'?'wrong':'';save();render();publish()}
 function backToBoard(){G.current=null;G.answers={};setPhase(Object.keys(G.used).length>=totalClues()?'board':'board')}
-function startFinal(){G.key='f'+Date.now().toString(36);G.wagers={};G.fanswers={};G.fres={};G.answers={};playWagerSound();setPhase('finalWager')}
+function startFinal(){markSeen('f',G.board.final.id);G.key='f'+Date.now().toString(36);G.wagers={};G.fanswers={};G.fres={};G.answers={};playWagerSound();setPhase('finalWager')}
 function showFinalClue(){
   document.querySelectorAll('[data-wager]').forEach(inp=>{const p=inp.dataset.wager;const v=parseInt(inp.value,10);if(!isNaN(v))G.wagers[p]=Math.max(0,Math.min(v,maxWager(p)))});
   G.players.forEach(p=>{if(G.wagers[p]==null)G.wagers[p]=0});
@@ -819,8 +857,8 @@ function publicState(){
   if(G.phase==='dd'){const C=clueOf(G.current);st.c={cat:C.cat,v:C.v*2,dd:1}}
   if(G.phase==='clue'||G.phase==='reveal'){const C=clueOf(G.current);st.c={cat:C.cat,v:C.v*(G.current===G.dd?2:1),q:C.q,o:C.o,dd:G.current===G.dd?1:0,pic:C.img?1:0}}
   if(G.phase==='reveal'){const R=G.results[G.current];st.rv={a:clueOf(G.current).a,r:R.r}}
-  if(G.phase==='finalWager'){st.fc=DATA.final.cat;st.max={};G.players.forEach(p=>st.max[p]=maxWager(p));st.fw=G.wagers}
-  if(G.phase==='finalClue'||G.phase==='finalReveal'){st.c={cat:DATA.final.cat,v:0,q:DATA.final.q,o:G.fopts.o}}
+  if(G.phase==='finalWager'){st.fc=G.board.final.cat;st.max={};G.players.forEach(p=>st.max[p]=maxWager(p));st.fw=G.wagers}
+  if(G.phase==='finalClue'||G.phase==='finalReveal'){st.c={cat:G.board.final.cat,v:0,q:G.board.final.q,o:G.fopts.o}}
   if(G.phase==='finalReveal'||G.phase==='over'){st.rv={a:G.fopts.a,r:G.fres};st.fw=G.wagers}
   return st;
 }
@@ -913,8 +951,8 @@ function renderInner(){
     app.innerHTML=hostHeader(`<span class="status"><span class="dot ${netOK?'on':''}"></span>Code ${esc(G.code||'')} · ${peerCount} phone${peerCount===1?'':'s'}</span>
       <button class="btn ghost sm" data-act="lobby">Players & QR</button>
       <button class="btn ${done>=totalClues()?'':'ghost'} sm" data-act="final">Final Jeopardy${done>=totalClues()?' →':''}</button>`)+
-      `<div class="boardwrap"><div class="board" style="--cols:${DATA.cats.length+(hasPicCol()?1:0)}">${DATA.cats.map(c=>`<div class="cat display">${esc(c.name)}</div>`).join('')}${hasPicCol()?`<div class="cat display" style="color:#ffd23f">📷 ${PIC_CAT}</div>`:''}
-      ${VALUES.map((v,r)=>DATA.cats.map((c,ci)=>{const id=ci+'-'+r;return `<button class="tilebtn display ${G.used[id]?'used':''}" data-clue="${id}" ${G.used[id]?'disabled':''}>$${v}</button>`}).join('')+(hasPicCol()?(()=>{const id='p-'+r;const ok=G.picCol[r];return `<button class="tilebtn display ${!ok||G.used[id]?'used':''}" data-clue="${id}" ${!ok||G.used[id]?'disabled':''}>$${v}</button>`})():'')).join('')}
+      `<div class="boardwrap"><div class="board" style="--cols:${G.board.cats.length+(hasPicCol()?1:0)}">${G.board.cats.map(c=>`<div class="cat display">${esc(c.name)}</div>`).join('')}${hasPicCol()?`<div class="cat display" style="color:#ffd23f">📷 ${PIC_CAT}</div>`:''}
+      ${VALUES.map((v,r)=>G.board.cats.map((c,ci)=>{const id=ci+'-'+r;if(!c.clues[r])return `<button class="tilebtn display used" disabled></button>`;return `<button class="tilebtn display ${G.used[id]?'used':''}" data-clue="${id}" ${G.used[id]?'disabled':''}>$${v}</button>`}).join('')+(hasPicCol()?(()=>{const id='p-'+r;const ok=G.picCol[r];return `<button class="tilebtn display ${!ok||G.used[id]?'used':''}" data-clue="${id}" ${!ok||G.used[id]?'disabled':''}>$${v}</button>`})():'')).join('')}
       </div>${scoreCards()}</div>`;
     return;
   }
@@ -927,7 +965,7 @@ function renderInner(){
   }
   if(ph==='clue'||ph==='reveal'||ph==='finalClue'||ph==='finalReveal'){
     const fin=ph.startsWith('final');const rev=ph.endsWith('eveal');
-    const C=fin?{cat:'Final Jeopardy: '+DATA.final.cat,v:0,q:DATA.final.q,...G.fopts}:clueOf(G.current);
+    const C=fin?{cat:'Final Jeopardy: '+G.board.final.cat,v:0,q:G.board.final.q,...G.fopts}:clueOf(G.current);
     const v=fin?0:C.v*(G.current===G.dd?2:1);
     const R=fin?G.fres:(G.results[G.current]||{}).r||{};
     const chosen=fin?(rev?G.fanswers:G.answers):(rev?(G.results[G.current]||{}).ch||{}:G.answers);
@@ -953,7 +991,7 @@ function renderInner(){
   }
   if(ph==='finalWager'){
     const s=preFinalScores();
-    app.innerHTML=hostHeader()+`<div class="cluescreen"><div class="cluemeta">Final Jeopardy</div><div class="dd" style="font-size:clamp(44px,6vw,90px)">${esc(DATA.final.cat)}</div>
+    app.innerHTML=hostHeader()+`<div class="cluescreen"><div class="cluemeta">Final Jeopardy</div><div class="dd" style="font-size:clamp(44px,6vw,90px)">${esc(G.board.final.cat)}</div>
       <div class="ph-sub" style="font-size:20px">Place your wagers. Phones can wager directly, or type them in here.</div>
       <div class="wagers">${G.players.map(p=>`<div class="wcard"><div class="nm"><span><span class="dot ${phones[p]?'on':''}"></span> ${esc(p)}</span><span style="color:var(--gold);font-family:'Baloo 2';font-weight:800">${money(s[p])}</span></div>
         <input type="number" min="0" max="${maxWager(p)}" data-wager="${esc(p)}" value="${G.wagers[p]??''}" placeholder="Wager"><small>Max ${money(maxWager(p))}${G.wagers[p]!=null?' · locked in ✓':''}</small></div>`).join('')}</div>
@@ -981,6 +1019,7 @@ function renderLobby(app){
       <div class="settings" style="margin-top:22px">
         <div class="set">Answer timer<div class="seg">${[15,20,30,45].map(t=>`<button class="${G.timer===t?'on':''}" data-timer="${t}">${t}s</button>`).join('')}</div></div>
         <div class="set">Wrong answers<div class="seg"><button class="${!G.minus?'on':''}" data-minus="0">Score 0</button><button class="${G.minus?'on':''}" data-minus="1">Lose points</button></div></div>
+        <div class="set">Question bank<div class="seg"><span class="bankinfo">${(()=>{const b=bankStats();return b.unseen+' of '+b.total+' still fresh'})()}</span><button data-act="histclr">Reset</button></div></div>
         <div class="set">Sound<div class="seg"><button class="${G.sound?'on':''}" data-sound="1">On</button><button class="${!G.sound?'on':''}" data-sound="0">Off</button></div></div>
       </div>
       <div class="row" style="justify-content:flex-start;margin-top:24px">
@@ -1029,8 +1068,9 @@ document.addEventListener('click',e=>{
   if(t.dataset.sound){syncNames();G.sound=t.dataset.sound==='1';if(!G.sound)stopMusic(true);save();render();return}
   if(t.dataset.rm!=null){syncNames();if(G.players.length>1){G.players.splice(+t.dataset.rm,1);save()}render();publish();return}
   const a=t.dataset.act;if(!a)return;
+  if(a==='histclr'){syncNames();openModal('Reset question history?','Every question becomes fresh again. Use this if you start playing with a new group.',()=>{lsSet(STORE_HIST,{});if(!Object.keys(G.used).length)newGame(G.players);render();publish()});return}
   if(a==='addpl'){syncNames();if(G.players.length<8){G.players.push('Player '+(G.players.length+1));save()}render();publish();return}
-  if(a==='start'){syncNames();if(lobbyEl){const x=lobbyEl;lobbyEl=null;const t=setInterval(()=>{x.volume=Math.max(0,x.volume-.04);if(x.volume<=0){clearInterval(t);x.pause()}},40)}if(!Object.keys(G.used).length)assignPics();G.tr=(G.tr||0)+1;publish();playStartSound();transitioning=true;bubbleTransition(()=>{transitioning=false;setPhase('board')});return}
+  if(a==='start'){syncNames();if(lobbyEl){const x=lobbyEl;lobbyEl=null;const t=setInterval(()=>{x.volume=Math.max(0,x.volume-.04);if(x.volume<=0){clearInterval(t);x.pause()}},40)}if(!Object.keys(G.used).length){assignPics();const h=hist();G.board.cats.forEach(c=>h.c[c.name]=Date.now());lsSet(STORE_HIST,h)}G.tr=(G.tr||0)+1;publish();playStartSound();transitioning=true;bubbleTransition(()=>{transitioning=false;setPhase('board')});return}
   if(a==='sndload'){const i=$('#sndin');if(i)i.click();return}
   if(a==='sndtest'){playStartSound(true);bubbleTransition(null);return}
   if(a==='sndrm'){removeSound();return}
@@ -1190,7 +1230,7 @@ function boot(){
   MODE=(JOIN_PARAM||location.hash==='#play')?'player':'host';
   if(MODE==='host'){
     G=lsGet(STORE_HOST);
-    if(!G||!G.opts||!G.players){G=null;newGame()}
+    if(!G||!G.opts||!G.players||!G.board){G=null;newGame()}
     if(!G.code){G.code=genCode();save()}
     if(G.phase==='pics'||G.phase==='lobby')G.phase='title';
     if(G.phase==='clue'||G.phase==='finalClue'){if(timeLeft()<=0)G.endsAt=Date.now()+5000}

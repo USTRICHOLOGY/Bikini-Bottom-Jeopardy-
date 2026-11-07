@@ -10,6 +10,17 @@ A SpongeBob trivia game in the style of Jeopardy, all in one `index.html`. There
 
 The board has 6 categories and 30 questions, plus a hidden Daily Double and Final Jeopardy with wagers.
 
+## Question bank
+Every new game deals a fresh board from `questions.js`: 353 questions across 22 categories, plus 29 Final Jeopardy questions and the 53 picture questions.
+
+- Categories that were played least recently come up first.
+- Each $200 to $1000 slot gets a question of matching difficulty that hasn't been seen yet.
+- A question counts as seen once it's opened. History is kept in the big-screen browser, so it lasts between game nights.
+- The lobby shows how many questions are still fresh. **Reset** makes everything fresh again (for example, with a new group).
+- Once a category runs out of fresh questions, the oldest ones come back first.
+
+To add questions, put more lines in `questions.js` (or ask Claude to extend the bank).
+
 Phones connect to the big screen directly through PeerJS (a free WebRTC service). It works best with everyone on the same Wi-Fi.
 
 ## Picture round ("Picture This")
