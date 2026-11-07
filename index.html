@@ -208,6 +208,68 @@ button.lock:hover{filter:brightness(1.1)}
   .top{padding:12px 14px}.boardwrap{padding:0 10px 12px}
   .logo .a,.logo .b{font-size:22px}
 }
+
+/* ================= PAINTED UI SKIN (Higgsfield assets in ui/) ================= */
+:root{--ink2:#2b1a0a;--outline:#2b1a0a}
+body{background:#0a3d6b url(ui/bg.jpg) center/cover fixed}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg,rgba(4,26,54,.05),rgba(4,26,54,.25));pointer-events:none;z-index:0}
+.sand{display:none}
+.logoimg{height:78px;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.top{padding:10px 24px 6px}
+/* buttons: painted, inked outline */
+.btn{border:3px solid var(--outline);box-shadow:0 5px 0 var(--outline);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.btn:active{box-shadow:0 2px 0 var(--outline)}
+.btn.pink,.btn.teal{box-shadow:0 5px 0 var(--outline)}
+.btn.sm{box-shadow:0 3px 0 var(--outline);border-width:2px}
+.btn.ghost{background:rgba(43,26,10,.55) url(ui/wood.jpg) center/300px;background-blend-mode:multiply;color:#fff4d6;border:2px solid var(--outline);box-shadow:0 3px 0 var(--outline)}
+.btn.ghost.sm{box-shadow:0 3px 0 var(--outline)}
+/* wooden board frame + metal tiles */
+.board{background:#5a3a1c url(ui/wood.jpg) center/420px;border:4px solid var(--outline);box-shadow:0 18px 40px rgba(0,0,0,.45),inset 0 0 0 4px rgba(255,220,150,.15);padding:12px;gap:10px;border-radius:20px}
+.cat{background:#3a250f url(ui/wood.jpg) center/260px;background-blend-mode:multiply;border:3px solid var(--outline);color:#ffe14d;text-shadow:2px 2px 0 var(--outline),-1px -1px 0 var(--outline),0 3px 0 var(--outline);border-radius:12px}
+.tilebtn{background:url(ui/tile.webp) center/100% 100% no-repeat;border-radius:10px;color:#ffd23f;
+  text-shadow:3px 3px 0 var(--outline),-2px -2px 0 var(--outline),2px -2px 0 var(--outline),-2px 2px 0 var(--outline),0 0 18px rgba(255,210,63,.35)}
+.tilebtn:hover{filter:brightness(1.15) saturate(1.1)}
+.tilebtn.used{background:url(ui/tile.webp) center/100% 100% no-repeat;filter:grayscale(.85) brightness(.45);color:transparent;text-shadow:none}
+/* wood panels and score cards */
+.panel,.pcard,.wcard,.pcard2{background:#4a2f14 url(ui/wood.jpg) center/380px;background-blend-mode:multiply;border:3px solid var(--outline);box-shadow:0 10px 24px rgba(0,0,0,.35),inset 0 0 0 3px rgba(255,220,150,.12)}
+.panel h2{text-shadow:2px 2px 0 var(--outline),-1px -1px 0 var(--outline)}
+.panel p,.hint{color:#f3dfb8}
+.pcard .sc{text-shadow:2px 2px 0 var(--outline),-1px -1px 0 var(--outline)}
+.pcard.lead{box-shadow:0 0 0 4px var(--gold),0 10px 24px rgba(0,0,0,.35)}
+.pl-row input,.wcard input{border:3px solid var(--outline);background:#fff8e6}
+.x{background:rgba(43,26,10,.6);border:2px solid var(--outline)}
+.seg{background:rgba(43,26,10,.55);border:2px solid var(--outline)}
+.status{background:rgba(43,26,10,.6);border:2px solid var(--outline);color:#fff4d6}
+.urlbox{background:rgba(43,26,10,.5)}
+#qr{border:4px solid var(--outline)}
+/* clue card on riveted metal */
+.cluetext{background:#cfc6e3 url(ui/metal.jpg) center/900px;color:#1d1240;text-shadow:none;border:4px solid var(--outline);border-radius:22px;padding:22px 34px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.cluescreen.pic .cluetext{padding:10px 28px}
+.cluemeta{color:#fff4d6;text-shadow:2px 2px 0 var(--outline)}
+.cluemeta .val{text-shadow:2px 2px 0 var(--outline),-1px -1px 0 var(--outline)}
+.opt{border:3px solid var(--outline);box-shadow:0 5px 0 var(--outline)}
+.opt .L{background:rgba(255,255,255,.35);border:2px solid var(--outline)}
+.timer{border:3px solid var(--outline);height:18px;background:rgba(43,26,10,.5)}
+.timenum{text-shadow:2px 2px 0 var(--outline),-1px -1px 0 var(--outline)}
+.lock{background:rgba(43,26,10,.55);border:2px solid var(--outline);box-shadow:none}
+.picframe{box-shadow:0 0 0 5px var(--outline),0 0 0 10px #ffd23f,0 18px 40px rgba(0,0,0,.5)}
+.dd{text-shadow:4px 4px 0 var(--outline),-2px -2px 0 var(--outline),0 10px 30px rgba(0,0,0,.4)}
+.pod{border:3px solid var(--outline)}
+.modal .panel{background:#4a2f14 url(ui/wood.jpg) center/380px;background-blend-mode:multiply}
+/* phones */
+.ph-clue{background:#cfc6e3 url(ui/metal.jpg) center/700px;color:#1d1240;border:3px solid var(--outline)}
+.ph-opt{border:3px solid var(--outline);box-shadow:0 4px 0 var(--outline)}
+.ph-name{border:3px solid var(--outline);box-shadow:0 5px 0 var(--outline)!important}
+.ph-big{text-shadow:2px 2px 0 var(--outline),-1px -1px 0 var(--outline)}
+.ph-score{text-shadow:2px 2px 0 var(--outline)}
+.ph-sub{color:#f3dfb8;text-shadow:1px 1px 0 rgba(0,0,0,.5)}
+.ph-wager{border:3px solid var(--outline)}
+.ph-top{background:rgba(43,26,10,.55) url(ui/wood.jpg) center/300px;background-blend-mode:multiply;border:3px solid var(--outline);border-radius:16px;padding:8px 12px}
+.ph-lock{border:4px solid var(--outline)}
+.cluescreen .hint{background:rgba(43,26,10,.7);padding:6px 14px;border-radius:99px;border:2px solid var(--outline);color:#fff4d6}
+.ph-sub{text-shadow:1px 1px 0 var(--outline),0 0 6px rgba(0,0,0,.6)}
+/* transition logo */
+.bubwipe .ttl img{width:min(70vw,900px);filter:drop-shadow(0 12px 30px rgba(0,0,0,.45))}
 </style>
 </head>
 <body>
@@ -416,7 +478,7 @@ function bubbleTransition(onMid){
   if(useVid)html+=`<video src="${TVID_URL}" muted playsinline autoplay></video>`;
   else for(let i=0;i<46;i++){const sz=6+Math.random()*26;const left=Math.random()*110-5;
     html+=`<div class="b" style="width:${sz}vmax;height:${sz}vmax;left:${left}%;--d:${(1.9+Math.random()*1.1).toFixed(2)}s;--dl:${(Math.random()*0.7).toFixed(2)}s;--wx:${(Math.random()*8-4).toFixed(1)}vw"></div>`}
-  html+='<div class="ttl"><div class="a">BIKINI BOTTOM</div><div class="b2">JEOPARDY!</div></div>';
+  html+='<div class="ttl"><img src="ui/logo.webp" alt="" onerror="this.outerHTML=\'<div class=&quot;a&quot;>BIKINI BOTTOM</div><div class=&quot;b2&quot;>JEOPARDY!</div>\'"></div>';
   w.innerHTML=html;document.body.appendChild(w);
   const v=w.querySelector('video');if(v){v.play().catch(()=>{});v.onerror=()=>{v.remove()}}
   if(onMid)setTimeout(onMid,1200);
@@ -623,7 +685,7 @@ document.addEventListener('paste',e=>{if(MODE!=='host'||!G||G.phase!=='pics'||!p
 
 // ---- host render ----
 function hostHeader(right){
-  return `<div class="top"><div class="logo display"><span class="a">BIKINI BOTTOM</span><span class="b">JEOPARDY!</span></div><div class="toolbar">${right||''}</div></div>`;
+  return `<div class="top"><div class="logo display"><img class="logoimg" src="ui/logo.webp" alt="Bikini Bottom Jeopardy!" onerror="this.outerHTML='<span class=&quot;a&quot;>BIKINI BOTTOM</span><span class=&quot;b&quot;>JEOPARDY!</span>'"></div><div class="toolbar">${right||''}</div></div>`;
 }
 function scoreCards(clickable){
   const s=scores();const max=Math.max(...G.players.map(p=>s[p]));

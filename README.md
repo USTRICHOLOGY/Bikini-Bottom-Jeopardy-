@@ -21,3 +21,6 @@ The column only appears once you've added pictures. There are two ways to add th
 
 ## Start transition
 Pressing **Start the game** plays a bubble transition on the big screen and every phone. To add your own sound effect: in the lobby, find **Start transition**, tap **Load sound** and pick an audio file (MP3, M4A, WAV or OGG). The sound saves on that laptop, and **Preview** plays it with the animation. If no sound is loaded, the game plays built-in bubble pops. To use a bubble video, tap **Load video** under **Bubble video** and pick a WebM with a transparent background. It plays on the big screen, and phones show built-in CSS bubbles. You can also put files at `sounds/transition.mp3` and `sounds/bubbles.webm` in the repo.
+
+## Art
+The UI art in `ui/` (seafloor background, wood planks, blue riveted tiles, metal clue card, sign logo) is original artwork generated with Higgsfield (GPT Image 2.6), using painted-style reference stills for texture and color.
