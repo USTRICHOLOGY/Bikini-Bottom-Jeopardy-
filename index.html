@@ -92,6 +92,7 @@ input{font-family:inherit}
 .bubwipe{position:fixed;inset:0;z-index:200;pointer-events:none;overflow:hidden}
 .bubwipe .veil{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,#4fc3ff 0%,#1478c4 45%,#0a3d6b 100%);opacity:0;animation:veil 3s ease-in-out forwards}
 @keyframes veil{0%{opacity:0}30%{opacity:1}62%{opacity:1}100%{opacity:0}}
+.bubwipe video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .bubwipe .b{position:absolute;bottom:-40vmax;border-radius:50%;
   background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0 6%,rgba(255,255,255,.35) 7%,rgba(160,225,255,.18) 40%,rgba(120,200,255,.08) 68%,rgba(255,255,255,.35) 71%,rgba(255,255,255,0) 74%);
   animation:wipeUp var(--d) cubic-bezier(.35,.1,.45,1) var(--dl) forwards}
@@ -386,6 +387,18 @@ async function loadSound(){
 function saveSound(file){if(!file)return;if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').put(file,'__startsound')}catch(e){}}
   if(SOUND_URL&&SOUND_URL.startsWith('blob:'))URL.revokeObjectURL(SOUND_URL);SOUND_URL=URL.createObjectURL(file);SOUND_FROM='laptop';render()}
 function removeSound(){if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').delete('__startsound')}catch(e){}}if(SOUND_URL&&SOUND_URL.startsWith('blob:'))URL.revokeObjectURL(SOUND_URL);SOUND_URL=null;SOUND_FROM='';render()}
+/* ---- transition video (keyed WebM with alpha), host laptop ---- */
+let TVID_URL=null, TVID_FROM='';
+const canAlphaWebm=()=>!/^((?!chrome|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent);
+async function loadTVid(){
+  if(picDB){await new Promise(res=>{try{const q=picDB.transaction('pics').objectStore('pics').get('__transvideo');q.onsuccess=()=>{if(q.result){TVID_URL=URL.createObjectURL(q.result);TVID_FROM='laptop'}res()};q.onerror=()=>res()}catch(e){res()}})}
+  if(!TVID_URL&&/^https?:$/.test(location.protocol)){const base=location.href.split(/[?#]/)[0].replace(/[^/]*$/,'');
+    try{const r=await fetch(base+'sounds/bubbles.webm',{method:'HEAD'});if(r.ok){TVID_URL=base+'sounds/bubbles.webm';TVID_FROM='site'}}catch(e){}}
+}
+function saveTVid(file){if(!file)return;if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').put(file,'__transvideo')}catch(e){}}
+  if(TVID_URL&&TVID_URL.startsWith('blob:'))URL.revokeObjectURL(TVID_URL);TVID_URL=URL.createObjectURL(file);TVID_FROM='laptop';render()}
+function removeTVid(){if(picDB){try{picDB.transaction('pics','readwrite').objectStore('pics').delete('__transvideo')}catch(e){}}if(TVID_URL&&TVID_URL.startsWith('blob:'))URL.revokeObjectURL(TVID_URL);TVID_URL=null;TVID_FROM='';render()}
+const isVideo=f=>(f.type&&f.type.startsWith('video/'))||/\.(webm)$/i.test(f.name||'');
 const isAudio=f=>(f.type&&f.type.startsWith('audio/'))||/\.(mp3|m4a|wav|ogg)$/i.test(f.name||'');
 function playStartSound(force){
   if(!force&&G&&!G.sound)return;
@@ -399,10 +412,13 @@ function playStartSound(force){
 function bubbleTransition(onMid){
   const w=document.createElement('div');w.className='bubwipe';
   let html='<div class="veil"></div>';
-  for(let i=0;i<46;i++){const sz=6+Math.random()*26;const left=Math.random()*110-5;
+  const useVid=MODE==='host'&&TVID_URL&&canAlphaWebm();
+  if(useVid)html+=`<video src="${TVID_URL}" muted playsinline autoplay></video>`;
+  else for(let i=0;i<46;i++){const sz=6+Math.random()*26;const left=Math.random()*110-5;
     html+=`<div class="b" style="width:${sz}vmax;height:${sz}vmax;left:${left}%;--d:${(1.9+Math.random()*1.1).toFixed(2)}s;--dl:${(Math.random()*0.7).toFixed(2)}s;--wx:${(Math.random()*8-4).toFixed(1)}vw"></div>`}
   html+='<div class="ttl"><div class="a">BIKINI BOTTOM</div><div class="b2">JEOPARDY!</div></div>';
   w.innerHTML=html;document.body.appendChild(w);
+  const v=w.querySelector('video');if(v){v.play().catch(()=>{});v.onerror=()=>{v.remove()}}
   if(onMid)setTimeout(onMid,1200);
   setTimeout(()=>w.remove(),3400);
 }
@@ -415,12 +431,14 @@ async function bulkImport(files){
     if(/\.zip$/i.test(f.name)){
       try{const JSZip=await loadJSZip();const z=await JSZip.loadAsync(f);
         for(const e of Object.values(z.files)){if(e.dir||/__MACOSX|\/\./.test(e.name))continue;
-          const id=stemOf(e.name);if(/\.(mp3|m4a|wav|ogg)$/i.test(e.name)){const bl=await e.async('blob');saveSound(new File([bl],e.name,{type:'audio/mpeg'}));ok++;continue}
+          const id=stemOf(e.name);if(/\.webm$/i.test(e.name)){const bl=await e.async('blob');saveTVid(new File([bl],e.name,{type:'video/webm'}));ok++;continue}
+          if(/\.(mp3|m4a|wav|ogg)$/i.test(e.name)){const bl=await e.async('blob');saveSound(new File([bl],e.name,{type:'audio/mpeg'}));ok++;continue}
           if(!/\.(jpe?g|png|webp|gif)$/i.test(e.name)){continue}
           if(!picById(id)){skip.push(e.name.split('/').pop());continue}
           const blob=await e.async('blob');const ext=e.name.split('.').pop().toLowerCase();
           await savePic(id,new File([blob],e.name,{type:'image/'+(ext==='jpg'?'jpeg':ext)}));ok++}
       }catch(err){skip.push(f.name+' (could not open zip)')}
+    } else if(isVideo(f)){saveTVid(f);ok++;
     } else if(isAudio(f)){saveSound(f);ok++;
     } else if(f.type&&f.type.startsWith('image/')){
       const id=stemOf(f.name);if(picById(id)){await savePic(id,f);ok++}else skip.push(f.name);
@@ -598,7 +616,7 @@ setInterval(()=>{
 let picFilter='all', picSel=null;
 // card selection, file input, drag-drop, paste for picture setup
 document.addEventListener('click',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;if(e.target.closest('button,a,input'))return;const c=e.target.closest('[data-pic]');if(c){picSel=c.dataset.pic;render()}},true);
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='sndin'&&e.target.files[0]){saveSound(e.target.files[0]);return}if(e.target&&e.target.id==='bulkin'&&e.target.files.length){bulkImport([...e.target.files]);return}const id=e.target&&e.target.dataset&&e.target.dataset.picfile;if(id&&e.target.files[0]){savePic(id,e.target.files[0])}});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='vidin'&&e.target.files[0]){saveTVid(e.target.files[0]);return}if(e.target&&e.target.id==='sndin'&&e.target.files[0]){saveSound(e.target.files[0]);return}if(e.target&&e.target.id==='bulkin'&&e.target.files.length){bulkImport([...e.target.files]);return}const id=e.target&&e.target.dataset&&e.target.dataset.picfile;if(id&&e.target.files[0]){savePic(id,e.target.files[0])}});
 document.addEventListener('dragover',e=>{if(MODE==='host'&&G&&G.phase==='pics'){e.preventDefault();document.querySelectorAll('.pcard2.drag').forEach(x=>x.classList.remove('drag'));const c=e.target.closest('[data-pic]');if(c)c.classList.add('drag')}});
 document.addEventListener('drop',e=>{if(MODE!=='host'||!G||G.phase!=='pics')return;e.preventDefault();const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])];if(!fs.length)return;const c=e.target.closest('[data-pic]');if(c&&fs.length===1&&!/\.zip$/i.test(fs[0].name)){picSel=c.dataset.pic;savePic(c.dataset.pic,fs[0])}else bulkImport(fs)});
 document.addEventListener('paste',e=>{if(MODE!=='host'||!G||G.phase!=='pics'||!picSel)return;const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(x=>x.type.startsWith('image/'));if(it){e.preventDefault();savePic(picSel,it.getAsFile())}});
@@ -618,7 +636,7 @@ function render(){
   if(ph==='pics'){
     const list=PIC_POOL.filter(p=>picFilter==='all'||p.t===picFilter);
     const tiers=[1,2,3,4,5].map(d=>PIC_POOL.some(p=>p.d===d&&PICS[p.id]));
-    app.innerHTML=hostHeader(`<span class="status">📷 ${picCount()} of ${PIC_POOL.length} pictures ready</span><button class="btn teal sm" data-act="bulk">Import zip or files</button><input type="file" id="bulkin" accept="image/*,audio/*,.zip,.mp3" multiple hidden><button class="btn sm" data-act="picsdone">Done</button>`)+
+    app.innerHTML=hostHeader(`<span class="status">📷 ${picCount()} of ${PIC_POOL.length} pictures ready</span><button class="btn teal sm" data-act="bulk">Import zip or files</button><input type="file" id="bulkin" accept="image/*,audio/*,video/webm,.zip,.mp3,.webm" multiple hidden><button class="btn sm" data-act="picsdone">Done</button>`)+
     `<div style="padding:0 24px 14px;display:flex;flex-direction:column;gap:10px">
       <div class="display" style="font-size:30px;color:var(--sponge)">Picture setup</div>
       <div style="border:3px dashed rgba(255,255,255,.25);border-radius:16px;padding:16px;text-align:center;font-weight:800;color:var(--muted)" id="bulkzone">⬇️ Drop the <b style="color:var(--white)">spongebob-pictures.zip</b> (or a bunch of image files) anywhere here. Files are matched to cards by name, like <code>rockbottom.jpg</code>.${importMsg?`<div style="color:var(--good);margin-top:6px">${esc(importMsg)}</div>`:''}</div>
@@ -712,6 +730,9 @@ function renderLobby(app){
         <div class="set">Start transition<div class="row" style="gap:6px;justify-content:flex-end"><span class="hint" style="font-size:13px">${SOUND_URL?(SOUND_FROM==='site'?'🔊 From site':'🔊 Custom sound'):'Built-in bubbles'}</span>
           <button class="btn ghost sm" data-act="sndload">${SOUND_URL&&SOUND_FROM==='laptop'?'Replace':'Load sound'}</button>${SOUND_URL&&SOUND_FROM==='laptop'?'<button class="btn ghost sm" data-act="sndrm">Remove</button>':''}<button class="btn sm" data-act="sndtest">Preview</button>
           <input type="file" id="sndin" accept="audio/*,.mp3,.m4a,.wav,.ogg" hidden></div></div>
+        <div class="set">Bubble video<div class="row" style="gap:6px;justify-content:flex-end"><span class="hint" style="font-size:13px">${TVID_URL?(TVID_FROM==='site'?'🎞️ From site':'🎞️ Custom video'):'Built-in bubbles'}</span>
+          <button class="btn ghost sm" data-act="vidload">${TVID_URL&&TVID_FROM==='laptop'?'Replace':'Load video'}</button>${TVID_URL&&TVID_FROM==='laptop'?'<button class="btn ghost sm" data-act="vidrm">Remove</button>':''}
+          <input type="file" id="vidin" accept="video/webm,.webm" hidden></div></div>
         <div class="set">Sound<div class="seg"><button class="${G.sound?'on':''}" data-sound="1">On</button><button class="${!G.sound?'on':''}" data-sound="0">Off</button></div></div>
       </div>
       <div class="row" style="justify-content:flex-start;margin-top:24px">
@@ -766,6 +787,8 @@ document.addEventListener('click',e=>{
   if(a==='sndload'){const i=$('#sndin');if(i)i.click();return}
   if(a==='sndtest'){playStartSound(true);bubbleTransition(null);return}
   if(a==='sndrm'){removeSound();return}
+  if(a==='vidload'){const i=$('#vidin');if(i)i.click();return}
+  if(a==='vidrm'){removeTVid();return}
   if(a==='pics'){syncNames();setPhase('pics');return}
   if(a==='picsdone'){importMsg='';setPhase('lobby');return}
   if(a==='bulk'){const i=$('#bulkin');if(i)i.click();return}
@@ -921,7 +944,7 @@ function boot(){
     if(G.phase==='pics')G.phase='lobby';
     if(G.phase==='clue'||G.phase==='finalClue'){if(timeLeft()<=0)G.endsAt=Date.now()+5000}
     render();hostNet();setInterval(publish,4000);
-    loadPics().then(loadRepoPics).then(loadSound).then(()=>render());
+    loadPics().then(loadRepoPics).then(loadSound).then(loadTVid).then(()=>render());
   } else {prender();playerNet()}
 }
 window.addEventListener('hashchange',()=>location.reload());
