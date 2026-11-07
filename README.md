@@ -24,6 +24,8 @@ The UI art in `ui/` (desktop and phone backgrounds, logo sign, blue board tiles,
 ## Question music
 Lobby music at `sounds/lobby.mp3` loops on the title and setup screens and fades out when the game starts.
 
+Clicking a dollar value plays `sounds/door.mp3`, then the bubble transition.
+
 A sound effect at `sounds/wager.mp3` plays when Final Jeopardy wagering starts.
 
 Add tracks as `sounds/music1.mp3`, `sounds/music2.mp3` and so on, up to `music12.mp3`. A random track fades in while each question is up and fades out at the reveal.

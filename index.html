@@ -568,6 +568,11 @@ function syncLobbyMusic(){
 }
 // browsers block audio until the first tap; start the lobby loop then
 document.addEventListener('pointerdown',()=>{if(lobbyEl&&lobbyEl.paused)lobbyEl.play().catch(()=>{})},true);
+let DOOR_URL=null;
+async function loadDoorSound(){if(!/^https?:$/.test(location.protocol))return;const base=location.href.split(/[?#]/)[0].replace(/[^/]*$/,'');
+  for(const ext of ['mp3','m4a','wav','ogg']){try{const r=await fetch(base+'sounds/door.'+ext,{method:'HEAD'});if(r.ok){DOOR_URL=base+'sounds/door.'+ext;return}}catch(e){}}}
+// plays the door sound; returns ms to wait before the bubbles start
+function playDoorSound(){if(!DOOR_URL||(G&&!G.sound))return 0;try{const a=new Audio(DOOR_URL);a.volume=.9;a.play().catch(()=>{})}catch(e){return 0}return 650}
 let WAGER_URL=null;
 async function loadWagerSound(){if(!/^https?:$/.test(location.protocol))return;const base=location.href.split(/[?#]/)[0].replace(/[^/]*$/,'');
   for(const ext of ['mp3','m4a','wav','ogg']){try{const r=await fetch(base+'sounds/wager.'+ext,{method:'HEAD'});if(r.ok){WAGER_URL=base+'sounds/wager.'+ext;return}}catch(e){}}}
@@ -724,8 +729,10 @@ function setPhase(ph){const prev=G.phase;G.phase=ph;save();render();publish();
 let transitioning=false;
 function openClue(id){
   if(G.used[id]||transitioning)return;
-  transitioning=true;G.tr=(G.tr||0)+1;publish();playStartSound();
-  bubbleTransition(()=>{transitioning=false;openClueNow(id)});
+  transitioning=true;
+  const wait=playDoorSound();
+  setTimeout(()=>{G.tr=(G.tr||0)+1;publish();playStartSound();
+    bubbleTransition(()=>{transitioning=false;openClueNow(id)})},wait);
 }
 function openClueNow(id){
   if(G.used[id])return;
@@ -1188,7 +1195,7 @@ function boot(){
     if(G.phase==='pics'||G.phase==='lobby')G.phase='title';
     if(G.phase==='clue'||G.phase==='finalClue'){if(timeLeft()<=0)G.endsAt=Date.now()+5000}
     render();hostNet();setInterval(publish,4000);
-    loadPics().then(loadRepoPics).then(loadSound).then(loadTVid).then(loadMusic).then(loadWagerSound).then(loadLobbyMusic).then(()=>render());
+    loadPics().then(loadRepoPics).then(loadSound).then(loadTVid).then(loadMusic).then(loadWagerSound).then(loadLobbyMusic).then(loadDoorSound).then(()=>render());
   } else {document.body.classList.add('phone-mode');prender();playerNet()}
 }
 window.addEventListener('hashchange',()=>location.reload());
